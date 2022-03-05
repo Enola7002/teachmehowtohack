@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="profile" href="http://gmpg.org/xfn/11">
+<link rel="pingback" href="https://thehanoichamomile.com/xmlrpc.php">
+
+<title>KIRA &#8211; The Hanoi Chamomile</title>
+<meta name='robots' content='max-image-preview:large' />
+
+<!-- Async WordPress.com Remote Login -->
+<script id="wpcom_remote_login_js">
+var wpcom_remote_login_extra_auth = '';
+function wpcom_remote_login_remove_dom_node_id( element_id ) {
+	var dom_node = document.getElementById( element_id );
+	if ( dom_node ) { dom_node.parentNode.removeChild( dom_node ); }
+}
+function wpcom_remote_login_remove_dom_node_classes( class_name ) {
+	var dom_nodes = document.querySelectorAll( '.' + class_name );
+	for ( var i = 0; i < dom_nodes.length; i++ ) {
+		dom_nodes[ i ].parentNode.removeChild( dom_nodes[ i ] );
+	}
+}
+function wpcom_remote_login_final_cleanup() {
+	wpcom_remote_login_remove_dom_node_classes( "wpcom_remote_login_msg" );
+	wpcom_remote_login_remove_dom_node_id( "wpcom_remote_login_key" );
+	wpcom_remote_login_remove_dom_node_id( "wpcom_remote_login_validate" );
+	wpcom_remote_login_remove_dom_node_id( "wpcom_remote_login_js" );
+	wpcom_remote_login_remove_dom_node_id( "wpcom_request_access_iframe" );
+	wpcom_remote_login_remove_dom_node_id( "wpcom_request_access_styles" );
+}
+
+// Watch for messages back from the remote login
+window.addEventListener( "message", function( e ) {
+	if ( e.origin === "https://r-login.wordpress.com" ) {
+		var data = {};
+		try {
+			data = JSON.parse( e.data );
+		} catch( e ) {
+			wpcom_remote_login_final_cleanup();
+			return;
+		}
+
+		if ( data.msg === 'LOGIN' ) {
+			// Clean up the login check iframe
+			wpcom_remote_login_remove_dom_node_id( "wpcom_remote_login_key" );
+
+			var id_regex = new RegExp( /^[0-9]+$/ );
+			var token_regex = new RegExp( /^.*|.*|.*$/ );
+			if (
+				token_regex.test( data.token )
+				&& id_regex.test( data.wpcomid )
+			) {
+				// We have everything we need to ask for a login
+				var script = document.createElement( "script" );
+				script.setAttribute( "id", "wpcom_remote_login_validate" );
+				script.src = '/remote-login.php?wpcom_remote_login=validate'
+					+ '&wpcomid=' + data.wpcomid
+					+ '&token=' + encodeURIComponent( data.token )
+					+ '&host=' + window.location.protocol
+					+ '//' + window.location.hostname
+					+ '&postid=9108'
+					+ '&is_singular=';
+				document.body.appendChild( script );
+			}
+
+			return;
+		}
+
+		// Safari ITP, not logged in, so redirect
+		if ( data.msg === 'LOGIN-REDIRECT' ) {
+			window.location = 'https://wordpress.com/log-in?redirect_to=' + window.location.href;
+			return;
+		}
+
+		// Safari ITP, storage access failed, remove the request
+		if ( data.msg === 'LOGIN-REMOVE' ) {
+			var css_zap = 'html { -webkit-transition: margin-top 1s; transition: margin-top 1s; } /* 9001 */ html { margin-top: 0 !important; } * html body { margin-top: 0 !important; } @media screen and ( max-width: 782px ) { html { margin-top: 0 !important; } * html body { margin-top: 0 !important; } }';
+			var style_zap = document.createElement( 'style' );
+			style_zap.type = 'text/css';
+			style_zap.appendChild( document.createTextNode( css_zap ) );
+			document.body.appendChild( style_zap );
+
+			var e = document.getElementById( 'wpcom_request_access_iframe' );
+			e.parentNode.removeChild( e );
+
+			document.cookie = 'wordpress_com_login_access=denied; path=/; max-age=31536000';
+
+			return;
+		}
+
+		// Safari ITP
+		if ( data.msg === 'REQUEST_ACCESS' ) {
+			console.log( 'request access: safari' );
+
+			// Check ITP iframe enable/disable knob
+			if ( wpcom_remote_login_extra_auth !== 'safari_itp_iframe' ) {
+				return;
+			}
+
+			// If we are in a "private window" there is no ITP.
+			var private_window = false;
+			try {
+				var opendb = window.openDatabase( null, null, null, null );
+			} catch( e ) {
+				private_window = true;
+			}
+
+			if ( private_window ) {
+				console.log( 'private window' );
+				return;
+			}
+
+			var iframe = document.createElement( 'iframe' );
+			iframe.id = 'wpcom_request_access_iframe';
+			iframe.setAttribute( 'scrolling', 'no' );
+			iframe.setAttribute( 'sandbox', 'allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-top-navigation-by-user-activation' );
+			iframe.src = 'https://r-login.wordpress.com/remote-login.php?wpcom_remote_login=request_access&origin=' + encodeURIComponent( data.origin ) + '&wpcomid=' + encodeURIComponent( data.wpcomid );
+
+			var css = 'html { -webkit-transition: margin-top 1s; transition: margin-top 1s; } /* 9001 */ html { margin-top: 46px !important; } * html body { margin-top: 46px !important; } @media screen and ( max-width: 660px ) { html { margin-top: 71px !important; } * html body { margin-top: 71px !important; } #wpcom_request_access_iframe { display: block; height: 71px !important; } } #wpcom_request_access_iframe { border: 0px; height: 46px; position: fixed; top: 0; left: 0; width: 100%; min-width: 100%; z-index: 99999; background: #23282d; } ';
+
+			var style = document.createElement( 'style' );
+			style.type = 'text/css';
+			style.id = 'wpcom_request_access_styles';
+			style.appendChild( document.createTextNode( css ) );
+			document.body.appendChild( style );
+
+			document.body.appendChild( iframe );
+		}
+
+		if ( data.msg === 'DONE' ) {
+			wpcom_remote_login_final_cleanup();
+		}
+	}
+}, false );
+
+// Inject the remote login iframe after the page has had a chance to load
+// more critical resources
+window.addEventListener( "DOMContentLoaded", function( e ) {
+	var iframe = document.createElement( "iframe" );
+	iframe.style.display = "none";
+	iframe.setAttribute( "scrolling", "no" );
+	iframe.setAttribute( "id", "wpcom_remote_login_key" );
+	iframe.src = "https://r-login.wordpress.com/remote-login.php"
+		+ "?wpcom_remote_login=key"
+		+ "&origin=aHR0cHM6Ly90aGVoYW5vaWNoYW1vbWlsZS5jb20%3D"
+		+ "&wpcomid=148320211"
+		+ "&time=1646462370";
+	document.body.appendChild( iframe );
+}, false );
+</script>
+<link rel='dns-prefetch' href='//s0.wp.com' />
+<link rel='dns-prefetch' href='//thehanoichamomile.wordpress.com' />
+<link rel='dns-prefetch' href='//fonts.googleapis.com' />
+<link rel="alternate" type="application/rss+xml" title="KIRA &raquo; Feed" href="https://thehanoichamomile.com/feed/" />
+<link rel="alternate" type="application/rss+xml" title="KIRA &raquo; Comments Feed" href="https://thehanoichamomile.com/comments/feed/" />
+	<script type="text/javascript">
+		/* <![CDATA[ */
+		function addLoadEvent(func) {
+			var oldonload = window.onload;
+			if (typeof window.onload != 'function') {
+				window.onload = func;
+			} else {
+				window.onload = function () {
+					oldonload();
+					func();
+				}
+			}
+		}
+		/* ]]> */
+	</script>
+	<script type="text/javascript">
+window._wpemojiSettings = {"baseUrl":"https:\/\/s0.wp.com\/wp-content\/mu-plugins\/wpcom-smileys\/twemoji\/2\/72x72\/","ext":".png","svgUrl":"https:\/\/s0.wp.com\/wp-content\/mu-plugins\/wpcom-smileys\/twemoji\/2\/svg\/","svgExt":".svg","source":{"concatemoji":"https:\/\/s0.wp.com\/wp-includes\/js\/wp-emoji-release.min.js?m=1625065786h&ver=5.9.1-RC1-52785"}};
+/*! This file is auto-generated */
+!function(e,a,t){var n,r,o,i=a.createElement("canvas"),p=i.getContext&&i.getContext("2d");function s(e,t){var a=String.fromCharCode;p.clearRect(0,0,i.width,i.height),p.fillText(a.apply(this,e),0,0);e=i.toDataURL();return p.clearRect(0,0,i.width,i.height),p.fillText(a.apply(this,t),0,0),e===i.toDataURL()}function c(e){var t=a.createElement("script");t.src=e,t.defer=t.type="text/javascript",a.getElementsByTagName("head")[0].appendChild(t)}for(o=Array("flag","emoji"),t.supports={everything:!0,everythingExceptFlag:!0},r=0;r<o.length;r++)t.supports[o[r]]=function(e){if(!p||!p.fillText)return!1;switch(p.textBaseline="top",p.font="600 32px Arial",e){case"flag":return s([127987,65039,8205,9895,65039],[127987,65039,8203,9895,65039])?!1:!s([55356,56826,55356,56819],[55356,56826,8203,55356,56819])&&!s([55356,57332,56128,56423,56128,56418,56128,56421,56128,56430,56128,56423,56128,56447],[55356,57332,8203,56128,56423,8203,56128,56418,8203,56128,56421,8203,56128,56430,8203,56128,56423,8203,56128,56447]);case"emoji":return!s([10084,65039,8205,55357,56613],[10084,65039,8203,55357,56613])}return!1}(o[r]),t.supports.everything=t.supports.everything&&t.supports[o[r]],"flag"!==o[r]&&(t.supports.everythingExceptFlag=t.supports.everythingExceptFlag&&t.supports[o[r]]);t.supports.everythingExceptFlag=t.supports.everythingExceptFlag&&!t.supports.flag,t.DOMReady=!1,t.readyCallback=function(){t.DOMReady=!0},t.supports.everything||(n=function(){t.readyCallback()},a.addEventListener?(a.addEventListener("DOMContentLoaded",n,!1),e.addEventListener("load",n,!1)):(e.attachEvent("onload",n),a.attachEvent("onreadystatechange",function(){"complete"===a.readyState&&t.readyCallback()})),(n=t.source||{}).concatemoji?c(n.concatemoji):n.wpemoji&&n.twemoji&&(c(n.twemoji),c(n.wpemoji)))}(window,document,window._wpemojiSettings);
+</script>
+<style type="text/css">
+img.wp-smiley,
+img.emoji {
+	display: inline !important;
+	border: none !important;
+	box-shadow: none !important;
+	height: 1em !important;
+	width: 1em !important;
+	margin: 0 0.07em !important;
+	vertical-align: -0.1em !important;
+	background: none !important;
+	padding: 0 !important;
+}
+</style>
+	<link rel='stylesheet' id='all-css-0-1' href='https://s0.wp.com/_static/??-eJytj0tOAzEQRC+E3fEoDNkgzuKxG9Oh/ZE/iXz7OAiGEEBhwa5LVa9UDcckTAwVQwXfROLmKBQ4JhO9KJ4Y+5WSppQ7+Bmj8EyBal+Pb+GPpGtDLpjdcDLCQU3yQW5gacQWFo7mVTAtWecOpXbG/yiqL+g/iygYbhYL7At4tKSRh33+50Ik1h2zYHTadOkp3MaHd6m/QL+Pf1s6yrAmfZ6se2xVuEz2z/9fVWRdKbhyAzfxHZuk2kklCvnEKDIepAJLpa4JsRY9+Uc1b+dp3t1vtvsT/OTXMA==?cssminify=yes' type='text/css' media='all' />
+<style id='wp-block-library-inline-css'>
+.has-text-align-justify {
+	text-align:justify;
+}
+</style>
+<style id='global-styles-inline-css'>
+body{--wp--preset--color--black: #000000;--wp--preset--color--cyan-bluish-gray: #abb8c3;--wp--preset--color--white: #ffffff;--wp--preset--color--pale-pink: #f78da7;--wp--preset--color--vivid-red: #cf2e2e;--wp--preset--color--luminous-vivid-orange: #ff6900;--wp--preset--color--luminous-vivid-amber: #fcb900;--wp--preset--color--light-green-cyan: #7bdcb5;--wp--preset--color--vivid-green-cyan: #00d084;--wp--preset--color--pale-cyan-blue: #8ed1fc;--wp--preset--color--vivid-cyan-blue: #0693e3;--wp--preset--color--vivid-purple: #9b51e0;--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple: linear-gradient(135deg,rgba(6,147,227,1) 0%,rgb(155,81,224) 100%);--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan: linear-gradient(135deg,rgb(122,220,180) 0%,rgb(0,208,130) 100%);--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange: linear-gradient(135deg,rgba(252,185,0,1) 0%,rgba(255,105,0,1) 100%);--wp--preset--gradient--luminous-vivid-orange-to-vivid-red: linear-gradient(135deg,rgba(255,105,0,1) 0%,rgb(207,46,46) 100%);--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray: linear-gradient(135deg,rgb(238,238,238) 0%,rgb(169,184,195) 100%);--wp--preset--gradient--cool-to-warm-spectrum: linear-gradient(135deg,rgb(74,234,220) 0%,rgb(151,120,209) 20%,rgb(207,42,186) 40%,rgb(238,44,130) 60%,rgb(251,105,98) 80%,rgb(254,248,76) 100%);--wp--preset--gradient--blush-light-purple: linear-gradient(135deg,rgb(255,206,236) 0%,rgb(152,150,240) 100%);--wp--preset--gradient--blush-bordeaux: linear-gradient(135deg,rgb(254,205,165) 0%,rgb(254,45,45) 50%,rgb(107,0,62) 100%);--wp--preset--gradient--luminous-dusk: linear-gradient(135deg,rgb(255,203,112) 0%,rgb(199,81,192) 50%,rgb(65,88,208) 100%);--wp--preset--gradient--pale-ocean: linear-gradient(135deg,rgb(255,245,203) 0%,rgb(182,227,212) 50%,rgb(51,167,181) 100%);--wp--preset--gradient--electric-grass: linear-gradient(135deg,rgb(202,248,128) 0%,rgb(113,206,126) 100%);--wp--preset--gradient--midnight: linear-gradient(135deg,rgb(2,3,129) 0%,rgb(40,116,252) 100%);--wp--preset--duotone--dark-grayscale: url('#wp-duotone-dark-grayscale');--wp--preset--duotone--grayscale: url('#wp-duotone-grayscale');--wp--preset--duotone--purple-yellow: url('#wp-duotone-purple-yellow');--wp--preset--duotone--blue-red: url('#wp-duotone-blue-red');--wp--preset--duotone--midnight: url('#wp-duotone-midnight');--wp--preset--duotone--magenta-yellow: url('#wp-duotone-magenta-yellow');--wp--preset--duotone--purple-green: url('#wp-duotone-purple-green');--wp--preset--duotone--blue-orange: url('#wp-duotone-blue-orange');--wp--preset--font-size--small: 13px;--wp--preset--font-size--medium: 20px;--wp--preset--font-size--large: 36px;--wp--preset--font-size--x-large: 42px;}.has-black-color{color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-color{color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-color{color: var(--wp--preset--color--white) !important;}.has-pale-pink-color{color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-color{color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-color{color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-color{color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-color{color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-color{color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-color{color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-color{color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-color{color: var(--wp--preset--color--vivid-purple) !important;}.has-black-background-color{background-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-background-color{background-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-background-color{background-color: var(--wp--preset--color--white) !important;}.has-pale-pink-background-color{background-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-background-color{background-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-background-color{background-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-background-color{background-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-background-color{background-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-background-color{background-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-background-color{background-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-background-color{background-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-background-color{background-color: var(--wp--preset--color--vivid-purple) !important;}.has-black-border-color{border-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-border-color{border-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-border-color{border-color: var(--wp--preset--color--white) !important;}.has-pale-pink-border-color{border-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-border-color{border-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-border-color{border-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-border-color{border-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-border-color{border-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-border-color{border-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-border-color{border-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-border-color{border-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-border-color{border-color: var(--wp--preset--color--vivid-purple) !important;}.has-vivid-cyan-blue-to-vivid-purple-gradient-background{background: var(--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple) !important;}.has-light-green-cyan-to-vivid-green-cyan-gradient-background{background: var(--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan) !important;}.has-luminous-vivid-amber-to-luminous-vivid-orange-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange) !important;}.has-luminous-vivid-orange-to-vivid-red-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-orange-to-vivid-red) !important;}.has-very-light-gray-to-cyan-bluish-gray-gradient-background{background: var(--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray) !important;}.has-cool-to-warm-spectrum-gradient-background{background: var(--wp--preset--gradient--cool-to-warm-spectrum) !important;}.has-blush-light-purple-gradient-background{background: var(--wp--preset--gradient--blush-light-purple) !important;}.has-blush-bordeaux-gradient-background{background: var(--wp--preset--gradient--blush-bordeaux) !important;}.has-luminous-dusk-gradient-background{background: var(--wp--preset--gradient--luminous-dusk) !important;}.has-pale-ocean-gradient-background{background: var(--wp--preset--gradient--pale-ocean) !important;}.has-electric-grass-gradient-background{background: var(--wp--preset--gradient--electric-grass) !important;}.has-midnight-gradient-background{background: var(--wp--preset--gradient--midnight) !important;}.has-small-font-size{font-size: var(--wp--preset--font-size--small) !important;}.has-medium-font-size{font-size: var(--wp--preset--font-size--medium) !important;}.has-large-font-size{font-size: var(--wp--preset--font-size--large) !important;}.has-x-large-font-size{font-size: var(--wp--preset--font-size--x-large) !important;}
+</style>
+<link rel='stylesheet' id='all-css-2-1' href='https://s0.wp.com/_static/??-eJx9jcEKg0AMRH+oaVhorR7Eb9E16IpZg8min2889FZ6GYbhPQYPgbhlo2zIBWQtU8qKcdvJd5be0AmmMfW0Ejv2jKoP/K0daZzIXNdvB6PzvyJ+A8MgO6mCJ6fCYLN/6e113IZXU9WfUL/DcgHSTkDo?cssminify=yes' type='text/css' media='all' />
+<link crossorigin="anonymous" rel='stylesheet' id='rosalie-webfont-css'  href='https://fonts.googleapis.com/css?family=Lora%3A400%2C700%2C400italic%2C700italic%7CMontserrat%3A400%2C700&#038;subset=latin%2Clatin-ext' media='all' />
+<link rel='stylesheet' id='all-css-4-1' href='https://s0.wp.com/_static/??-eJyFkEEOwjAMBD9EcCtUOCHekgY3mCZxFScq/J7ApSBouM3KOwcvzJMyHBKGBOmCHgWmiJ6yh8iiHSFIujvcGpEN/C+XGvSOzShfhs9qctlSELAYMFI5rGDNFTaknfIY8jvXlJnOFpPAoA32zKNyNBa4rbz2wyyctI3aL1T/j1UZQSfi8BHU4DTFmhqxzGcL2teWS3xKJ39s97umaw5t210fhWOnqw==?cssminify=yes' type='text/css' media='all' />
+<link rel='stylesheet' id='print-css-5-1' href='https://s0.wp.com/wp-content/mu-plugins/global-print/global-print.css?m=1465851035h&cssminify=yes' type='text/css' media='print' />
+<style id='jetpack-global-styles-frontend-style-inline-css'>
+:root { --font-headings: unset; --font-base: unset; --font-headings-default: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif; --font-base-default: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif;}
+</style>
+<link rel='stylesheet' id='all-css-8-1' href='https://s0.wp.com/wp-content/themes/h4/global.css?m=1420737423h&cssminify=yes' type='text/css' media='all' />
+<script id='wpcom-actionbar-placeholder-js-extra'>
+var actionbardata = {"siteID":"148320211","siteURL":"https:\/\/thehanoichamomile.com","xhrURL":"https:\/\/thehanoichamomile.com\/wp-admin\/admin-ajax.php","nonce":"37fb06d7c4","isLoggedIn":"","statusMessage":"","subsEmailDefault":"instantly","proxyScriptUrl":"https:\/\/s0.wp.com\/wp-content\/js\/wpcom-proxy-request.js?ver=20211021","i18n":{"followedText":"New posts from this site will now appear in your <a href=\"https:\/\/wordpress.com\/read\">Reader<\/a>","foldBar":"Collapse this bar","unfoldBar":"Expand this bar"}};
+</script>
+<script crossorigin='anonymous' type='text/javascript' src='https://s0.wp.com/_static/??-eJzTLy/QTc7PK0nNK9HPKtbPzU/KzEnVLS1OLUpMB4rpZual5etlFevoo6oryinRLSjKr6iEyWXmJeeUpqQWgySzCktTiyqhlF5uZh5BRbq5melFiSWpUMX2ubaGZsbm5gYmJpbmWQCPUzuV'></script>
+<script type='text/javascript'>
+	window.addEventListener( 'DOMContentLoaded', function() {
+		rltInitialize( {"token":null,"iframeOrigins":["https:\/\/widgets.wp.com"]} );
+	} );
+</script>
+<link rel='stylesheet' id='all-css-0-2' href='https://s0.wp.com/wp-content/mu-plugins/highlander-comments/style.css?m=1641292264h&cssminify=yes' type='text/css' media='all' />
+<link rel="EditURI" type="application/rsd+xml" title="RSD" href="https://thehanoichamomile.wordpress.com/xmlrpc.php?rsd" />
+<link rel="wlwmanifest" type="application/wlwmanifest+xml" href="https://s0.wp.com/wp-includes/wlwmanifest.xml" /> 
+<meta name="generator" content="WordPress.com" />
+<link rel='shortlink' href='https://wp.me/a2kRt' />
+
+<!-- Jetpack Open Graph Tags -->
+<meta property="og:type" content="website" />
+<meta property="og:title" content="KIRA" />
+<meta property="og:description" content="The Hanoi Chamomile" />
+<meta property="og:url" content="https://thehanoichamomile.com/" />
+<meta property="og:site_name" content="KIRA" />
+<meta property="og:image" content="https://thehanoichamomile.files.wordpress.com/2020/04/cropped-kira.jpg?w=200" />
+<meta property="og:image:width" content="200" />
+<meta property="og:image:height" content="200" />
+<meta property="og:image:alt" content="" />
+<meta property="og:locale" content="en_US" />
+
+<!-- End Jetpack Open Graph Tags -->
+<link rel="search" type="application/opensearchdescription+xml" href="https://thehanoichamomile.com/osd.xml" title="KIRA" />
+<link rel="search" type="application/opensearchdescription+xml" href="https://s1.wp.com/opensearch.xml" title="WordPress.com" />
+<meta name="application-name" content="KIRA" /><meta name="msapplication-window" content="width=device-width;height=device-height" /><meta name="msapplication-tooltip" content="The Hanoi Chamomile" /><meta name="msapplication-task" content="name=Subscribe;action-uri=https://thehanoichamomile.com/feed/;icon-uri=https://thehanoichamomile.files.wordpress.com/2020/04/cropped-kira.jpg?w=16" /><meta name="msapplication-task" content="name=Sign up for a free blog;action-uri=http://wordpress.com/signup/;icon-uri=https://s0.wp.com/i/favicon.ico" /><meta name="msapplication-task" content="name=WordPress.com Support;action-uri=http://support.wordpress.com/;icon-uri=https://s0.wp.com/i/favicon.ico" /><meta name="msapplication-task" content="name=WordPress.com Forums;action-uri=http://forums.wordpress.com/;icon-uri=https://s0.wp.com/i/favicon.ico" /><meta name="description" content="The Hanoi Chamomile" />
+<!-- There is no amphtml version available for this URL. --><link rel="icon" href="https://thehanoichamomile.files.wordpress.com/2020/04/cropped-kira.jpg?w=32" sizes="32x32" />
+<link rel="icon" href="https://thehanoichamomile.files.wordpress.com/2020/04/cropped-kira.jpg?w=192" sizes="192x192" />
+<link rel="apple-touch-icon" href="https://thehanoichamomile.files.wordpress.com/2020/04/cropped-kira.jpg?w=180" />
+<meta name="msapplication-TileImage" content="https://thehanoichamomile.files.wordpress.com/2020/04/cropped-kira.jpg?w=270" />
+</head>
+
+<body class="home blog custom-background wp-embed-responsive customizer-styles-applied highlander-enabled highlander-light">
+	<div id="page" class="site">
+
+		<header id="masthead" class="site-header" role="banner">
+			<div id="navbar" class="navbar">
+				<div class="container-fluid">
+					<div class="row">
+											<div class="col-xs-11 col-xs-push-1 col-lg-3 col-lg-push-9 textright-xs social-rtl">
+									<nav class="jetpack-social-navigation jetpack-social-navigation-genericons" aria-label="Social Links Menu">
+			<div class="menu-social-container"><ul id="menu-social" class="menu"><li id="menu-item-106" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-106"><a href="https://www.facebook.com/kiranguyen2512"><span class="screen-reader-text">Facebook</span></a></li>
+<li id="menu-item-107" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-107"><a href="https://www.instagram.com/kiranguyen__"><span class="screen-reader-text">Instagram</span></a></li>
+<li id="menu-item-336" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-336"><a href="https://www.youtube.com/channel/UCZv-924OFOCEX6A8hcvdisQ?view_as=subscriber"><span class="screen-reader-text">Youtube</span></a></li>
+</ul></div>		</nav><!-- .jetpack-social-navigation -->
+								</div><!-- .col-xs-10 -->
+						<div class="col-lg-9 col-lg-pull-3 menu-rtl">
+							<div class="menu-toggle"><i></i><span class="screen-reader-text">Primary Menu</span></div>
+							<nav id="site-navigation" class="navigation main-navigation" role="navigation">
+								<div class="menu-primary-container"><ul id="menu-primary" class="nav-menu"><li id="menu-item-6" class="menu-item menu-item-type-custom menu-item-object-custom current-menu-item current_page_item menu-item-6"><a href="/" aria-current="page">Home</a></li>
+<li id="menu-item-628" class="menu-item menu-item-type-post_type menu-item-object-page current_page_parent menu-item-has-children menu-item-628"><a href="https://thehanoichamomile.com/blog/">Blog</a>
+<ul class="sub-menu">
+	<li id="menu-item-619" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-619"><a href="https://thehanoichamomile.com/category/minimalism/">Minimalism</a></li>
+	<li id="menu-item-470" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-470"><a href="https://thehanoichamomile.com/category/lifestyle/">Lifestyle</a></li>
+	<li id="menu-item-2885" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-2885"><a href="https://thehanoichamomile.com/category/nhat-ky/">Nhật ký</a></li>
+	<li id="menu-item-2882" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-2882"><a href="https://thehanoichamomile.com/category/cuoc-song-o-nhat-ban/">Cuộc sống ở Nhật Bản</a></li>
+	<li id="menu-item-2883" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-2883"><a href="https://thehanoichamomile.com/category/cuoc-song-o-ha-noi/">Cuộc sống ở Hà Nội</a></li>
+	<li id="menu-item-2884" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-2884"><a href="https://thehanoichamomile.com/category/hanh-trinh-cua-minh/">Hành trình của mình</a></li>
+	<li id="menu-item-2887" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-2887"><a href="https://thehanoichamomile.com/category/hoc-ngoai-ngu/">Học ngoại ngữ</a></li>
+	<li id="menu-item-2888" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-2888"><a href="https://thehanoichamomile.com/category/productivity/">Productivity</a></li>
+	<li id="menu-item-2886" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-2886"><a href="https://thehanoichamomile.com/category/doc-sach/">Đọc sách</a></li>
+	<li id="menu-item-2889" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-2889"><a href="https://thehanoichamomile.com/category/nau-an/">Nấu Ăn</a></li>
+	<li id="menu-item-2890" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-2890"><a href="https://thehanoichamomile.com/category/kham-pha-du-lich/">Khám phá &amp; Du lịch</a></li>
+</ul>
+</li>
+<li id="menu-item-6272" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-6272"><a href="https://www.youtube.com/channel/UCZv-924OFOCEX6A8hcvdisQ?view_as=subscriber">Youtube</a></li>
+<li id="menu-item-6799" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-6799"><a href="https://thehanoichamomile.com/ungho/">ỦNG HỘ</a></li>
+<li id="menu-item-68" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-68"><a href="https://thehanoichamomile.com/about/">About me</a></li>
+<li id="menu-item-1481" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-1481"><a href="https://kiranokurashi.home.blog/">日本語</a></li>
+</ul></div>							</nav><!-- #site-navigation -->
+						</div><!-- .col-xs-12 -->
+										</div><!-- .row -->
+				</div><!-- .container -->
+			</div><!-- #navbar -->
+		</header><!-- #masthead -->
+
+			<section class="image-header textcenter-xs">
+						<a href="https://thehanoichamomile.com/" class="site-logo-link" rel="home" itemprop="url"></a>						<h1 class="site-title"><a href="https://thehanoichamomile.com/" rel="home">KIRA</a></h1>
+			<p class="site-description">The Hanoi Chamomile</p>
+						<div class="container">
+				<div class="col-xs-12 textcenter-xs">
+							<nav class="jetpack-social-navigation jetpack-social-navigation-genericons" aria-label="Social Links Menu">
+			<div class="menu-social-container"><ul id="menu-social-1" class="menu"><li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-106"><a href="https://www.facebook.com/kiranguyen2512"><span class="screen-reader-text">Facebook</span></a></li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-107"><a href="https://www.instagram.com/kiranguyen__"><span class="screen-reader-text">Instagram</span></a></li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-336"><a href="https://www.youtube.com/channel/UCZv-924OFOCEX6A8hcvdisQ?view_as=subscriber"><span class="screen-reader-text">Youtube</span></a></li>
+</ul></div>		</nav><!-- .jetpack-social-navigation -->
+						</div><!-- .col-xs-10 -->
+			</div><!-- .container -->
+					</section><!-- .image-header -->
+	
+	
+<section id="content" class="site-content">
+	<div class="container">
+		<div class="row">
+						<div id="primary" class="content-area col-lg-8">
+							<main id="main" class="site-main row" role="main">
+
+									
+						
+<article id="post-9108" class="post-9108 post type-post status-publish format-standard has-post-thumbnail sticky hentry category-lifestyle col-xs-12 col-sm-6">
+	<header class="entry-header">
+		<h1 class="entry-title textcenter-xs"><a href="https://thehanoichamomile.com/2022/03/03/3-loai-tra-yeu-thich-cua-minh/" rel="bookmark">3 loại trà yêu thích của&nbsp;mình</a></h1>	</header><!-- .entry-header -->
+	<div class="entry-meta textcenter-xs"><span class="posted-on"><time class="entry-date published updated" datetime="2022-03-03T17:48:57+07:00">March 3, 2022</time>.</span><span class="reading-time">Reading time 9 minutes.</span></div>
+			<div class="entry-thumbnail">
+			<a href="https://thehanoichamomile.com/2022/03/03/3-loai-tra-yeu-thich-cua-minh/" rel="bookmark"><img width="750" height="500" src="https://thehanoichamomile.files.wordpress.com/2022/03/dscf1755.jpg?w=750" class="attachment-post-thumbnail size-post-thumbnail wp-post-image" alt="" srcset="https://thehanoichamomile.files.wordpress.com/2022/03/dscf1755.jpg?w=750 750w, https://thehanoichamomile.files.wordpress.com/2022/03/dscf1755.jpg?w=1500 1500w, https://thehanoichamomile.files.wordpress.com/2022/03/dscf1755.jpg?w=150 150w, https://thehanoichamomile.files.wordpress.com/2022/03/dscf1755.jpg?w=300 300w, https://thehanoichamomile.files.wordpress.com/2022/03/dscf1755.jpg?w=768 768w, https://thehanoichamomile.files.wordpress.com/2022/03/dscf1755.jpg?w=1024 1024w" sizes="(max-width: 750px) 100vw, 750px" data-attachment-id="9114" data-permalink="https://thehanoichamomile.com/2022/03/03/3-loai-tra-yeu-thich-cua-minh/dscf1755/" data-orig-file="https://thehanoichamomile.files.wordpress.com/2022/03/dscf1755.jpg" data-orig-size="6240,4160" data-comments-opened="1" data-image-meta="{&quot;aperture&quot;:&quot;4&quot;,&quot;credit&quot;:&quot;&quot;,&quot;camera&quot;:&quot;X-S10&quot;,&quot;caption&quot;:&quot;&quot;,&quot;created_timestamp&quot;:&quot;1646308152&quot;,&quot;copyright&quot;:&quot;&quot;,&quot;focal_length&quot;:&quot;35&quot;,&quot;iso&quot;:&quot;400&quot;,&quot;shutter_speed&quot;:&quot;0.008&quot;,&quot;title&quot;:&quot;&quot;,&quot;orientation&quot;:&quot;0&quot;}" data-image-title="DSCF1755" data-image-description="" data-image-caption="" data-medium-file="https://thehanoichamomile.files.wordpress.com/2022/03/dscf1755.jpg?w=300" data-large-file="https://thehanoichamomile.files.wordpress.com/2022/03/dscf1755.jpg?w=750" /></a>
+		</div><!-- .entry-thumbnail -->
+		<div class="entry-summary">
+		<p>Trong bài viết này mình sẽ chia sẻ với các bạn ba loại trà yêu thích mà mình uống nhiều nhất trong thời điểm hiện tại. Mỗi loại trà đều có những hương vị đặc trưng riêng, có những câu chuyện nho nhỏ riêng, và cũng phù hợp để uống vào một khoảng thời điểm [&#8230;]</p>
+<a href="https://thehanoichamomile.com/2022/03/03/3-loai-tra-yeu-thich-cua-minh/" class="more-link">Read More</a>			</div><!-- .entry-summary -->
+</article><!-- #post-## -->
+
+					
+						
+<article id="post-9101" class="post-9101 post type-post status-publish format-standard has-post-thumbnail sticky hentry category-doc-gi-xem-gi-nghe-gi col-xs-12 col-sm-6">
+	<header class="entry-header">
+		<h1 class="entry-title textcenter-xs"><a href="https://thehanoichamomile.com/2022/03/01/thang-3-doc-gi-xem-gi-nghe-gi/" rel="bookmark">Tháng 3, đọc gì? Xem gì? Nghe&nbsp;gì?</a></h1>	</header><!-- .entry-header -->
+	<div class="entry-meta textcenter-xs"><span class="posted-on"><time class="entry-date published updated" datetime="2022-03-01T18:29:59+07:00">March 1, 2022</time>.</span><span class="reading-time">Reading time 11 minutes.</span></div>
+			<div class="entry-thumbnail">
+			<a href="https://thehanoichamomile.com/2022/03/01/thang-3-doc-gi-xem-gi-nghe-gi/" rel="bookmark"><img width="750" height="500" src="https://thehanoichamomile.files.wordpress.com/2022/03/dscf1748.jpg?w=750" class="attachment-post-thumbnail size-post-thumbnail wp-post-image" alt="" loading="lazy" srcset="https://thehanoichamomile.files.wordpress.com/2022/03/dscf1748.jpg?w=750 750w, https://thehanoichamomile.files.wordpress.com/2022/03/dscf1748.jpg?w=1500 1500w, https://thehanoichamomile.files.wordpress.com/2022/03/dscf1748.jpg?w=150 150w, https://thehanoichamomile.files.wordpress.com/2022/03/dscf1748.jpg?w=300 300w, https://thehanoichamomile.files.wordpress.com/2022/03/dscf1748.jpg?w=768 768w, https://thehanoichamomile.files.wordpress.com/2022/03/dscf1748.jpg?w=1024 1024w" sizes="(max-width: 750px) 100vw, 750px" data-attachment-id="9106" data-permalink="https://thehanoichamomile.com/2022/03/01/thang-3-doc-gi-xem-gi-nghe-gi/dscf1748/" data-orig-file="https://thehanoichamomile.files.wordpress.com/2022/03/dscf1748.jpg" data-orig-size="6240,4160" data-comments-opened="1" data-image-meta="{&quot;aperture&quot;:&quot;2&quot;,&quot;credit&quot;:&quot;&quot;,&quot;camera&quot;:&quot;X-S10&quot;,&quot;caption&quot;:&quot;&quot;,&quot;created_timestamp&quot;:&quot;1646158027&quot;,&quot;copyright&quot;:&quot;&quot;,&quot;focal_length&quot;:&quot;35&quot;,&quot;iso&quot;:&quot;320&quot;,&quot;shutter_speed&quot;:&quot;0.01&quot;,&quot;title&quot;:&quot;&quot;,&quot;orientation&quot;:&quot;0&quot;}" data-image-title="DSCF1748" data-image-description="" data-image-caption="" data-medium-file="https://thehanoichamomile.files.wordpress.com/2022/03/dscf1748.jpg?w=300" data-large-file="https://thehanoichamomile.files.wordpress.com/2022/03/dscf1748.jpg?w=750" /></a>
+		</div><!-- .entry-thumbnail -->
+		<div class="entry-summary">
+		<p>ĐỌC GÌ? Lối sống tối giản của người Nhật &#8211; Sasaki Fumio Nhắc đề sách về chủ đề tối giản, mình nghĩ là ai cũng sẽ nói đến cuốn sách này đầu tiên. Tiêu đề rất dễ hiểu, cộng với bìa sách màu ghi làm toát lên đúng chất tối giản sẽ khiến người đọc [&#8230;]</p>
+<a href="https://thehanoichamomile.com/2022/03/01/thang-3-doc-gi-xem-gi-nghe-gi/" class="more-link">Read More</a>			</div><!-- .entry-summary -->
+</article><!-- #post-## -->
+
+					
+						
+<article id="post-9082" class="post-9082 post type-post status-publish format-standard has-post-thumbnail hentry category-lifestyle category-productivity category-thoi-quen col-xs-12 col-sm-6">
+	<header class="entry-header">
+		<h1 class="entry-title textcenter-xs"><a href="https://thehanoichamomile.com/2022/02/19/thoi-quen-buoi-sang-nang-suat-cua-minh-2022/" rel="bookmark">Thói quen buổi sáng năng suất của mình&nbsp;(2022)</a></h1>	</header><!-- .entry-header -->
+	<div class="entry-meta textcenter-xs"><span class="posted-on"><time class="entry-date published updated" datetime="2022-02-19T11:00:00+07:00">February 19, 2022</time>.</span><span class="reading-time">Reading time 19 minutes.</span></div>
+			<div class="entry-thumbnail">
+			<a href="https://thehanoichamomile.com/2022/02/19/thoi-quen-buoi-sang-nang-suat-cua-minh-2022/" rel="bookmark"><img width="750" height="422" src="https://thehanoichamomile.files.wordpress.com/2022/02/morning-routine.jpg?w=750" class="attachment-post-thumbnail size-post-thumbnail wp-post-image" alt="" loading="lazy" srcset="https://thehanoichamomile.files.wordpress.com/2022/02/morning-routine.jpg?w=750 750w, https://thehanoichamomile.files.wordpress.com/2022/02/morning-routine.jpg?w=1500 1500w, https://thehanoichamomile.files.wordpress.com/2022/02/morning-routine.jpg?w=150 150w, https://thehanoichamomile.files.wordpress.com/2022/02/morning-routine.jpg?w=300 300w, https://thehanoichamomile.files.wordpress.com/2022/02/morning-routine.jpg?w=768 768w, https://thehanoichamomile.files.wordpress.com/2022/02/morning-routine.jpg?w=1024 1024w" sizes="(max-width: 750px) 100vw, 750px" data-attachment-id="9084" data-permalink="https://thehanoichamomile.com/2022/02/19/thoi-quen-buoi-sang-nang-suat-cua-minh-2022/morning-routine/" data-orig-file="https://thehanoichamomile.files.wordpress.com/2022/02/morning-routine.jpg" data-orig-size="3200,1800" data-comments-opened="1" data-image-meta="{&quot;aperture&quot;:&quot;0&quot;,&quot;credit&quot;:&quot;&quot;,&quot;camera&quot;:&quot;&quot;,&quot;caption&quot;:&quot;&quot;,&quot;created_timestamp&quot;:&quot;0&quot;,&quot;copyright&quot;:&quot;&quot;,&quot;focal_length&quot;:&quot;0&quot;,&quot;iso&quot;:&quot;0&quot;,&quot;shutter_speed&quot;:&quot;0&quot;,&quot;title&quot;:&quot;&quot;,&quot;orientation&quot;:&quot;0&quot;}" data-image-title="morning routine" data-image-description="" data-image-caption="" data-medium-file="https://thehanoichamomile.files.wordpress.com/2022/02/morning-routine.jpg?w=300" data-large-file="https://thehanoichamomile.files.wordpress.com/2022/02/morning-routine.jpg?w=750" /></a>
+		</div><!-- .entry-thumbnail -->
+		<div class="entry-summary">
+		<p>Trong bài viết này, mình sẽ chia sẻ với các bạn thói quen buổi sáng năng suất và lành mạnh của mình. Đây là một chuỗi thói quen mà mình đã xây dựng và duy trì được hơn 3 năm nay, giúp mình khởi đầu một ngày mới hiệu quả hơn, và cũng là một [&#8230;]</p>
+<a href="https://thehanoichamomile.com/2022/02/19/thoi-quen-buoi-sang-nang-suat-cua-minh-2022/" class="more-link">Read More</a>			</div><!-- .entry-summary -->
+</article><!-- #post-## -->
+
+					
+						
+<article id="post-9075" class="post-9075 post type-post status-publish format-standard has-post-thumbnail hentry category-khoa-hoc col-xs-12 col-sm-6">
+	<header class="entry-header">
+		<h1 class="entry-title textcenter-xs"><a href="https://thehanoichamomile.com/2022/02/14/vi-sao-nen-di-an-do-ngot-trong-lan-hen-ho-dau-tien/" rel="bookmark">Vì sao nên đi ăn đồ ngọt trong lần hẹn hò đầu&nbsp;tiên?</a></h1>	</header><!-- .entry-header -->
+	<div class="entry-meta textcenter-xs"><span class="posted-on"><time class="entry-date published updated" datetime="2022-02-14T12:09:18+07:00">February 14, 2022</time>.</span><span class="reading-time">Reading time 4 minutes.</span></div>
+			<div class="entry-thumbnail">
+			<a href="https://thehanoichamomile.com/2022/02/14/vi-sao-nen-di-an-do-ngot-trong-lan-hen-ho-dau-tien/" rel="bookmark"><img width="750" height="397" src="https://thehanoichamomile.files.wordpress.com/2022/02/www.simplemost.comscreen-shot-2018-02-13-at-da3c1bda82ea4510eb92b878f843a65018812a6b.png?w=750" class="attachment-post-thumbnail size-post-thumbnail wp-post-image" alt="" loading="lazy" srcset="https://thehanoichamomile.files.wordpress.com/2022/02/www.simplemost.comscreen-shot-2018-02-13-at-da3c1bda82ea4510eb92b878f843a65018812a6b.png?w=750 750w, https://thehanoichamomile.files.wordpress.com/2022/02/www.simplemost.comscreen-shot-2018-02-13-at-da3c1bda82ea4510eb92b878f843a65018812a6b.png 1500w, https://thehanoichamomile.files.wordpress.com/2022/02/www.simplemost.comscreen-shot-2018-02-13-at-da3c1bda82ea4510eb92b878f843a65018812a6b.png?w=150 150w, https://thehanoichamomile.files.wordpress.com/2022/02/www.simplemost.comscreen-shot-2018-02-13-at-da3c1bda82ea4510eb92b878f843a65018812a6b.png?w=300 300w, https://thehanoichamomile.files.wordpress.com/2022/02/www.simplemost.comscreen-shot-2018-02-13-at-da3c1bda82ea4510eb92b878f843a65018812a6b.png?w=768 768w, https://thehanoichamomile.files.wordpress.com/2022/02/www.simplemost.comscreen-shot-2018-02-13-at-da3c1bda82ea4510eb92b878f843a65018812a6b.png?w=1024 1024w" sizes="(max-width: 750px) 100vw, 750px" data-attachment-id="9077" data-permalink="https://thehanoichamomile.com/2022/02/14/vi-sao-nen-di-an-do-ngot-trong-lan-hen-ho-dau-tien/www-simplemost-comscreen-shot-2018-02-13-at-da3c1bda82ea4510eb92b878f843a65018812a6b/" data-orig-file="https://thehanoichamomile.files.wordpress.com/2022/02/www.simplemost.comscreen-shot-2018-02-13-at-da3c1bda82ea4510eb92b878f843a65018812a6b.png" data-orig-size="1500,793" data-comments-opened="1" data-image-meta="{&quot;aperture&quot;:&quot;0&quot;,&quot;credit&quot;:&quot;&quot;,&quot;camera&quot;:&quot;&quot;,&quot;caption&quot;:&quot;&quot;,&quot;created_timestamp&quot;:&quot;0&quot;,&quot;copyright&quot;:&quot;&quot;,&quot;focal_length&quot;:&quot;0&quot;,&quot;iso&quot;:&quot;0&quot;,&quot;shutter_speed&quot;:&quot;0&quot;,&quot;title&quot;:&quot;&quot;,&quot;orientation&quot;:&quot;0&quot;}" data-image-title="www.simplemost.comScreen-Shot-2018-02-13-at-da3c1bda82ea4510eb92b878f843a65018812a6b" data-image-description="" data-image-caption="" data-medium-file="https://thehanoichamomile.files.wordpress.com/2022/02/www.simplemost.comscreen-shot-2018-02-13-at-da3c1bda82ea4510eb92b878f843a65018812a6b.png?w=300" data-large-file="https://thehanoichamomile.files.wordpress.com/2022/02/www.simplemost.comscreen-shot-2018-02-13-at-da3c1bda82ea4510eb92b878f843a65018812a6b.png?w=750" /></a>
+		</div><!-- .entry-thumbnail -->
+		<div class="entry-summary">
+		<p>Nhân dịp ngày lễ tình nhân Valentine (14/02), mình muốn chia sẻ một nội dung khá là thú vị, dựa trên một bài nghiên cứu khoa học có tiêu đề “Sweet love: The effects of sweet taste experience on romantic perceptions” (Tình yêu ngọt ngào: Ảnh hưởng của trải nghiệm hương vị ngọt đối với [&#8230;]</p>
+<a href="https://thehanoichamomile.com/2022/02/14/vi-sao-nen-di-an-do-ngot-trong-lan-hen-ho-dau-tien/" class="more-link">Read More</a>			</div><!-- .entry-summary -->
+</article><!-- #post-## -->
+
+					
+						
+<article id="post-9057" class="post-9057 post type-post status-publish format-standard has-post-thumbnail hentry category-nhat-ky col-xs-12 col-sm-6">
+	<header class="entry-header">
+		<h1 class="entry-title textcenter-xs"><a href="https://thehanoichamomile.com/2022/02/13/tan-man-chu-nhat-ngay-13-02/" rel="bookmark">Tản mạn chủ nhật ngày&nbsp;13.02</a></h1>	</header><!-- .entry-header -->
+	<div class="entry-meta textcenter-xs"><span class="posted-on"><time class="entry-date published updated" datetime="2022-02-13T18:37:58+07:00">February 13, 2022</time>.</span><span class="reading-time">Reading time 5 minutes.</span></div>
+			<div class="entry-thumbnail">
+			<a href="https://thehanoichamomile.com/2022/02/13/tan-man-chu-nhat-ngay-13-02/" rel="bookmark"><img width="750" height="500" src="https://thehanoichamomile.files.wordpress.com/2022/02/dscf1417.jpg?w=750" class="attachment-post-thumbnail size-post-thumbnail wp-post-image" alt="" loading="lazy" srcset="https://thehanoichamomile.files.wordpress.com/2022/02/dscf1417.jpg?w=750 750w, https://thehanoichamomile.files.wordpress.com/2022/02/dscf1417.jpg?w=1500 1500w, https://thehanoichamomile.files.wordpress.com/2022/02/dscf1417.jpg?w=150 150w, https://thehanoichamomile.files.wordpress.com/2022/02/dscf1417.jpg?w=300 300w, https://thehanoichamomile.files.wordpress.com/2022/02/dscf1417.jpg?w=768 768w, https://thehanoichamomile.files.wordpress.com/2022/02/dscf1417.jpg?w=1024 1024w" sizes="(max-width: 750px) 100vw, 750px" data-attachment-id="9061" data-permalink="https://thehanoichamomile.com/dscf1417/" data-orig-file="https://thehanoichamomile.files.wordpress.com/2022/02/dscf1417.jpg" data-orig-size="1920,1280" data-comments-opened="1" data-image-meta="{&quot;aperture&quot;:&quot;2&quot;,&quot;credit&quot;:&quot;&quot;,&quot;camera&quot;:&quot;X-S10&quot;,&quot;caption&quot;:&quot;&quot;,&quot;created_timestamp&quot;:&quot;1644739980&quot;,&quot;copyright&quot;:&quot;&quot;,&quot;focal_length&quot;:&quot;35&quot;,&quot;iso&quot;:&quot;250&quot;,&quot;shutter_speed&quot;:&quot;0.01&quot;,&quot;title&quot;:&quot;&quot;,&quot;orientation&quot;:&quot;1&quot;}" data-image-title="dscf1417" data-image-description="" data-image-caption="" data-medium-file="https://thehanoichamomile.files.wordpress.com/2022/02/dscf1417.jpg?w=300" data-large-file="https://thehanoichamomile.files.wordpress.com/2022/02/dscf1417.jpg?w=750" /></a>
+		</div><!-- .entry-thumbnail -->
+		<div class="entry-summary">
+		<p>Chủ Nhật, ngày 13.02.2022. Hôm nay vẫn là một ngày mưa rét. Được cái lúc sáng dậy thì chỉ mưa lất phất nên quyết định phóng xe lên phố làm bát phở, nhân tiện ghé qua quán cafe yêu thích ngồi một lúc. Mặc quần áo heattech bên trong, đi găng tay, đội mũ bảo [&#8230;]</p>
+<a href="https://thehanoichamomile.com/2022/02/13/tan-man-chu-nhat-ngay-13-02/" class="more-link">Read More</a>			</div><!-- .entry-summary -->
+</article><!-- #post-## -->
+
+					
+						
+<article id="post-9035" class="post-9035 post type-post status-publish format-standard has-post-thumbnail hentry category-suc-khoe col-xs-12 col-sm-6">
+	<header class="entry-header">
+		<h1 class="entry-title textcenter-xs"><a href="https://thehanoichamomile.com/2022/01/11/sau-5-nam-cuoi-cung-minh-cung-da-tang-can-tro-lai/" rel="bookmark">Sau 5 năm, cuối cùng mình cũng đã tăng cân trở&nbsp;lại</a></h1>	</header><!-- .entry-header -->
+	<div class="entry-meta textcenter-xs"><span class="posted-on"><time class="entry-date published updated" datetime="2022-01-11T15:51:18+07:00">January 11, 2022</time>.</span><span class="reading-time">Reading time 14 minutes.</span></div>
+			<div class="entry-thumbnail">
+			<a href="https://thehanoichamomile.com/2022/01/11/sau-5-nam-cuoi-cung-minh-cung-da-tang-can-tro-lai/" rel="bookmark"><img width="750" height="500" src="https://thehanoichamomile.files.wordpress.com/2022/01/e382b9e382afe383aae383bce383b3e382b7e383a7e38383e38388-2022-01-06-175335-2.jpg?w=750" class="attachment-post-thumbnail size-post-thumbnail wp-post-image" alt="" loading="lazy" srcset="https://thehanoichamomile.files.wordpress.com/2022/01/e382b9e382afe383aae383bce383b3e382b7e383a7e38383e38388-2022-01-06-175335-2.jpg?w=750 750w, https://thehanoichamomile.files.wordpress.com/2022/01/e382b9e382afe383aae383bce383b3e382b7e383a7e38383e38388-2022-01-06-175335-2.jpg?w=150 150w, https://thehanoichamomile.files.wordpress.com/2022/01/e382b9e382afe383aae383bce383b3e382b7e383a7e38383e38388-2022-01-06-175335-2.jpg?w=300 300w, https://thehanoichamomile.files.wordpress.com/2022/01/e382b9e382afe383aae383bce383b3e382b7e383a7e38383e38388-2022-01-06-175335-2.jpg?w=768 768w, https://thehanoichamomile.files.wordpress.com/2022/01/e382b9e382afe383aae383bce383b3e382b7e383a7e38383e38388-2022-01-06-175335-2.jpg?w=1024 1024w, https://thehanoichamomile.files.wordpress.com/2022/01/e382b9e382afe383aae383bce383b3e382b7e383a7e38383e38388-2022-01-06-175335-2.jpg 1300w" sizes="(max-width: 750px) 100vw, 750px" data-attachment-id="9037" data-permalink="https://thehanoichamomile.com/2022/01/11/sau-5-nam-cuoi-cung-minh-cung-da-tang-can-tro-lai/%e3%82%b9%e3%82%af%e3%83%aa%e3%83%bc%e3%83%b3%e3%82%b7%e3%83%a7%e3%83%83%e3%83%88-2022-01-06-175335-2/" data-orig-file="https://thehanoichamomile.files.wordpress.com/2022/01/e382b9e382afe383aae383bce383b3e382b7e383a7e38383e38388-2022-01-06-175335-2.jpg" data-orig-size="1300,867" data-comments-opened="1" data-image-meta="{&quot;aperture&quot;:&quot;0&quot;,&quot;credit&quot;:&quot;&quot;,&quot;camera&quot;:&quot;&quot;,&quot;caption&quot;:&quot;&quot;,&quot;created_timestamp&quot;:&quot;1641492005&quot;,&quot;copyright&quot;:&quot;&quot;,&quot;focal_length&quot;:&quot;0&quot;,&quot;iso&quot;:&quot;0&quot;,&quot;shutter_speed&quot;:&quot;0&quot;,&quot;title&quot;:&quot;&quot;,&quot;orientation&quot;:&quot;1&quot;}" data-image-title="スクリーンショット 2022-01-06 175335-2" data-image-description="" data-image-caption="" data-medium-file="https://thehanoichamomile.files.wordpress.com/2022/01/e382b9e382afe383aae383bce383b3e382b7e383a7e38383e38388-2022-01-06-175335-2.jpg?w=300" data-large-file="https://thehanoichamomile.files.wordpress.com/2022/01/e382b9e382afe383aae383bce383b3e382b7e383a7e38383e38388-2022-01-06-175335-2.jpg?w=750" /></a>
+		</div><!-- .entry-thumbnail -->
+		<div class="entry-summary">
+		<p>Còn gì tuyệt hơn khi đầu năm đón nhận một tin vui liên quan đến sức khỏe? Ngày 04/01, mình đứng lên chiếc cân điện tử Xiaomi mới mua trên TIKI, và chỉ biết thốt lên “WTF?” khi thấy con số cân nặng là&#8230; 70kg. Sau hơn 5 năm, cuối cùng thì mình cũng tăng [&#8230;]</p>
+<a href="https://thehanoichamomile.com/2022/01/11/sau-5-nam-cuoi-cung-minh-cung-da-tang-can-tro-lai/" class="more-link">Read More</a>			</div><!-- .entry-summary -->
+</article><!-- #post-## -->
+
+					
+						
+<article id="post-9026" class="post-9026 post type-post status-publish format-standard has-post-thumbnail hentry category-nhat-ky col-xs-12 col-sm-6">
+	<header class="entry-header">
+		<h1 class="entry-title textcenter-xs"><a href="https://thehanoichamomile.com/2022/01/08/tra-loi-22-cau-hoi-ve-minh/" rel="bookmark">Trả lời 22 câu hỏi về&nbsp;mình</a></h1>	</header><!-- .entry-header -->
+	<div class="entry-meta textcenter-xs"><span class="posted-on"><time class="entry-date published updated" datetime="2022-01-08T10:35:00+07:00">January 8, 2022</time>.</span><span class="reading-time">Reading time 15 minutes.</span></div>
+			<div class="entry-thumbnail">
+			<a href="https://thehanoichamomile.com/2022/01/08/tra-loi-22-cau-hoi-ve-minh/" rel="bookmark"><img width="750" height="422" src="https://thehanoichamomile.files.wordpress.com/2022/01/22-cau-hoi-ve-minh-30000.jpg?w=750" class="attachment-post-thumbnail size-post-thumbnail wp-post-image" alt="" loading="lazy" srcset="https://thehanoichamomile.files.wordpress.com/2022/01/22-cau-hoi-ve-minh-30000.jpg?w=750 750w, https://thehanoichamomile.files.wordpress.com/2022/01/22-cau-hoi-ve-minh-30000.jpg?w=1500 1500w, https://thehanoichamomile.files.wordpress.com/2022/01/22-cau-hoi-ve-minh-30000.jpg?w=150 150w, https://thehanoichamomile.files.wordpress.com/2022/01/22-cau-hoi-ve-minh-30000.jpg?w=300 300w, https://thehanoichamomile.files.wordpress.com/2022/01/22-cau-hoi-ve-minh-30000.jpg?w=768 768w, https://thehanoichamomile.files.wordpress.com/2022/01/22-cau-hoi-ve-minh-30000.jpg?w=1024 1024w" sizes="(max-width: 750px) 100vw, 750px" data-attachment-id="9029" data-permalink="https://thehanoichamomile.com/2022/01/08/tra-loi-22-cau-hoi-ve-minh/22-cau-hoi-ve-minh-30000/" data-orig-file="https://thehanoichamomile.files.wordpress.com/2022/01/22-cau-hoi-ve-minh-30000.jpg" data-orig-size="1920,1080" data-comments-opened="1" data-image-meta="{&quot;aperture&quot;:&quot;0&quot;,&quot;credit&quot;:&quot;&quot;,&quot;camera&quot;:&quot;&quot;,&quot;caption&quot;:&quot;&quot;,&quot;created_timestamp&quot;:&quot;0&quot;,&quot;copyright&quot;:&quot;&quot;,&quot;focal_length&quot;:&quot;0&quot;,&quot;iso&quot;:&quot;0&quot;,&quot;shutter_speed&quot;:&quot;0&quot;,&quot;title&quot;:&quot;&quot;,&quot;orientation&quot;:&quot;0&quot;}" data-image-title="22 câu hỏi về mình 30000" data-image-description="" data-image-caption="" data-medium-file="https://thehanoichamomile.files.wordpress.com/2022/01/22-cau-hoi-ve-minh-30000.jpg?w=300" data-large-file="https://thehanoichamomile.files.wordpress.com/2022/01/22-cau-hoi-ve-minh-30000.jpg?w=750" /></a>
+		</div><!-- .entry-thumbnail -->
+		<div class="entry-summary">
+		<p>Nếu được gặp lại Kira hồi còn trẻ thì mình sẽ nói với cậu ý là trong vài năm nữa bạn sẽ gặp phải một vấn đề sức khỏe khiến Nhân dịp năm mới 2022, mình muốn viết một bài blog với nội dung là “trả lời 22 câu hỏi về mình”. 22 câu hỏi [&#8230;]</p>
+<a href="https://thehanoichamomile.com/2022/01/08/tra-loi-22-cau-hoi-ve-minh/" class="more-link">Read More</a>			</div><!-- .entry-summary -->
+</article><!-- #post-## -->
+
+					
+						
+<article id="post-9010" class="post-9010 post type-post status-publish format-standard has-post-thumbnail hentry category-doc-gi-xem-gi-nghe-gi col-xs-12 col-sm-6">
+	<header class="entry-header">
+		<h1 class="entry-title textcenter-xs"><a href="https://thehanoichamomile.com/2022/01/04/thang-1-doc-gi-xem-gi-nghe-gi/" rel="bookmark">Tháng 1, đọc gì? Xem gì? Nghe&nbsp;gì?</a></h1>	</header><!-- .entry-header -->
+	<div class="entry-meta textcenter-xs"><span class="posted-on"><time class="entry-date published updated" datetime="2022-01-04T17:55:57+07:00">January 4, 2022</time>.</span><span class="reading-time">Reading time 13 minutes.</span></div>
+			<div class="entry-thumbnail">
+			<a href="https://thehanoichamomile.com/2022/01/04/thang-1-doc-gi-xem-gi-nghe-gi/" rel="bookmark"><img width="750" height="500" src="https://thehanoichamomile.files.wordpress.com/2022/01/dscf0882-1.jpg?w=750" class="attachment-post-thumbnail size-post-thumbnail wp-post-image" alt="" loading="lazy" srcset="https://thehanoichamomile.files.wordpress.com/2022/01/dscf0882-1.jpg?w=750 750w, https://thehanoichamomile.files.wordpress.com/2022/01/dscf0882-1.jpg?w=1500 1500w, https://thehanoichamomile.files.wordpress.com/2022/01/dscf0882-1.jpg?w=150 150w, https://thehanoichamomile.files.wordpress.com/2022/01/dscf0882-1.jpg?w=300 300w, https://thehanoichamomile.files.wordpress.com/2022/01/dscf0882-1.jpg?w=768 768w, https://thehanoichamomile.files.wordpress.com/2022/01/dscf0882-1.jpg?w=1024 1024w" sizes="(max-width: 750px) 100vw, 750px" data-attachment-id="9019" data-permalink="https://thehanoichamomile.com/2022/01/04/thang-1-doc-gi-xem-gi-nghe-gi/dscf0882/" data-orig-file="https://thehanoichamomile.files.wordpress.com/2022/01/dscf0882-1.jpg" data-orig-size="1920,1280" data-comments-opened="1" data-image-meta="{&quot;aperture&quot;:&quot;3.2&quot;,&quot;credit&quot;:&quot;&quot;,&quot;camera&quot;:&quot;X-S10&quot;,&quot;caption&quot;:&quot;&quot;,&quot;created_timestamp&quot;:&quot;1641317443&quot;,&quot;copyright&quot;:&quot;&quot;,&quot;focal_length&quot;:&quot;25.4&quot;,&quot;iso&quot;:&quot;640&quot;,&quot;shutter_speed&quot;:&quot;0.01&quot;,&quot;title&quot;:&quot;&quot;,&quot;orientation&quot;:&quot;1&quot;}" data-image-title="DSCF0882" data-image-description="" data-image-caption="" data-medium-file="https://thehanoichamomile.files.wordpress.com/2022/01/dscf0882-1.jpg?w=300" data-large-file="https://thehanoichamomile.files.wordpress.com/2022/01/dscf0882-1.jpg?w=750" /></a>
+		</div><!-- .entry-thumbnail -->
+		<div class="entry-summary">
+		<p>Happy New Year! Dưới đây là một số gợi ý về những cuốn sách bạn có thể đọc, những gì bạn có thể xem, và playlist bạn có thể nghe trong tháng đầu tiên của năm 2022. Hi vọng là bài viết khai bút đầu năm này sẽ có ích! ĐỌC GÌ? 1. HOW WE [&#8230;]</p>
+<a href="https://thehanoichamomile.com/2022/01/04/thang-1-doc-gi-xem-gi-nghe-gi/" class="more-link">Read More</a>			</div><!-- .entry-summary -->
+</article><!-- #post-## -->
+
+					
+						
+<article id="post-8983" class="post-8983 post type-post status-publish format-standard has-post-thumbnail hentry category-hanh-trinh-cua-minh category-nhat-ky col-xs-12 col-sm-6">
+	<header class="entry-header">
+		<h1 class="entry-title textcenter-xs"><a href="https://thehanoichamomile.com/2021/12/29/nam-2021-qua-nhung-dong-chu-va-net-ve-tren-so-tay/" rel="bookmark">Năm 2021 qua những dòng chữ và nét vẽ trên sổ&nbsp;tay</a></h1>	</header><!-- .entry-header -->
+	<div class="entry-meta textcenter-xs"><span class="posted-on"><time class="entry-date published updated" datetime="2021-12-29T15:01:34+07:00">December 29, 2021</time>.</span><span class="reading-time">Reading time 9 minutes.</span></div>
+			<div class="entry-thumbnail">
+			<a href="https://thehanoichamomile.com/2021/12/29/nam-2021-qua-nhung-dong-chu-va-net-ve-tren-so-tay/" rel="bookmark"><img width="750" height="421" src="https://thehanoichamomile.files.wordpress.com/2021/11/e382b9e382afe383aae383bce383b3e382b7e383a7e38383e38388-2021-11-06-081841.jpg?w=750" class="attachment-post-thumbnail size-post-thumbnail wp-post-image" alt="" loading="lazy" srcset="https://thehanoichamomile.files.wordpress.com/2021/11/e382b9e382afe383aae383bce383b3e382b7e383a7e38383e38388-2021-11-06-081841.jpg?w=750 750w, https://thehanoichamomile.files.wordpress.com/2021/11/e382b9e382afe383aae383bce383b3e382b7e383a7e38383e38388-2021-11-06-081841.jpg?w=1500 1500w, https://thehanoichamomile.files.wordpress.com/2021/11/e382b9e382afe383aae383bce383b3e382b7e383a7e38383e38388-2021-11-06-081841.jpg?w=150 150w, https://thehanoichamomile.files.wordpress.com/2021/11/e382b9e382afe383aae383bce383b3e382b7e383a7e38383e38388-2021-11-06-081841.jpg?w=300 300w, https://thehanoichamomile.files.wordpress.com/2021/11/e382b9e382afe383aae383bce383b3e382b7e383a7e38383e38388-2021-11-06-081841.jpg?w=768 768w, https://thehanoichamomile.files.wordpress.com/2021/11/e382b9e382afe383aae383bce383b3e382b7e383a7e38383e38388-2021-11-06-081841.jpg?w=1024 1024w" sizes="(max-width: 750px) 100vw, 750px" data-attachment-id="8885" data-permalink="https://thehanoichamomile.com/2021/11/06/minh-dung-so-tay-nhu-the-nao-ft-hobonichi-techo/%e3%82%b9%e3%82%af%e3%83%aa%e3%83%bc%e3%83%b3%e3%82%b7%e3%83%a7%e3%83%83%e3%83%88-2021-11-06-081841/" data-orig-file="https://thehanoichamomile.files.wordpress.com/2021/11/e382b9e382afe383aae383bce383b3e382b7e383a7e38383e38388-2021-11-06-081841.jpg" data-orig-size="1918,1076" data-comments-opened="1" data-image-meta="{&quot;aperture&quot;:&quot;0&quot;,&quot;credit&quot;:&quot;&quot;,&quot;camera&quot;:&quot;&quot;,&quot;caption&quot;:&quot;&quot;,&quot;created_timestamp&quot;:&quot;0&quot;,&quot;copyright&quot;:&quot;&quot;,&quot;focal_length&quot;:&quot;0&quot;,&quot;iso&quot;:&quot;0&quot;,&quot;shutter_speed&quot;:&quot;0&quot;,&quot;title&quot;:&quot;&quot;,&quot;orientation&quot;:&quot;0&quot;}" data-image-title="スクリーンショット 2021-11-06 081841" data-image-description="" data-image-caption="" data-medium-file="https://thehanoichamomile.files.wordpress.com/2021/11/e382b9e382afe383aae383bce383b3e382b7e383a7e38383e38388-2021-11-06-081841.jpg?w=300" data-large-file="https://thehanoichamomile.files.wordpress.com/2021/11/e382b9e382afe383aae383bce383b3e382b7e383a7e38383e38388-2021-11-06-081841.jpg?w=750" /></a>
+		</div><!-- .entry-thumbnail -->
+		<div class="entry-summary">
+		<p>Đối với mình, sổ tay giống như một trợ thủ đắc lực, giúp mình quản lý kế hoạch và thời gian một cách hiệu quả hơn, qua đó hoàn thành các công việc cần làm trong ngày theo đúng những gì bản thân đã vạch ra từ trước. Sổ tay giúp mình ghi chú lại [&#8230;]</p>
+<a href="https://thehanoichamomile.com/2021/12/29/nam-2021-qua-nhung-dong-chu-va-net-ve-tren-so-tay/" class="more-link">Read More</a>			</div><!-- .entry-summary -->
+</article><!-- #post-## -->
+
+					
+						
+<article id="post-8965" class="post-8965 post type-post status-publish format-standard has-post-thumbnail hentry category-cuoc-song-o-ha-noi category-nhat-ky col-xs-12 col-sm-6">
+	<header class="entry-header">
+		<h1 class="entry-title textcenter-xs"><a href="https://thehanoichamomile.com/2021/12/18/cup-of-tea/" rel="bookmark">Cup Of Tea</a></h1>	</header><!-- .entry-header -->
+	<div class="entry-meta textcenter-xs"><span class="posted-on"><time class="entry-date published updated" datetime="2021-12-18T09:13:24+07:00">December 18, 2021</time>.</span><span class="reading-time">Reading time 9 minutes.</span></div>
+			<div class="entry-thumbnail">
+			<a href="https://thehanoichamomile.com/2021/12/18/cup-of-tea/" rel="bookmark"><img width="750" height="500" src="https://thehanoichamomile.files.wordpress.com/2021/12/dscf8381.jpg?w=750" class="attachment-post-thumbnail size-post-thumbnail wp-post-image" alt="" loading="lazy" srcset="https://thehanoichamomile.files.wordpress.com/2021/12/dscf8381.jpg?w=750 750w, https://thehanoichamomile.files.wordpress.com/2021/12/dscf8381.jpg?w=1500 1500w, https://thehanoichamomile.files.wordpress.com/2021/12/dscf8381.jpg?w=150 150w, https://thehanoichamomile.files.wordpress.com/2021/12/dscf8381.jpg?w=300 300w, https://thehanoichamomile.files.wordpress.com/2021/12/dscf8381.jpg?w=768 768w, https://thehanoichamomile.files.wordpress.com/2021/12/dscf8381.jpg?w=1024 1024w" sizes="(max-width: 750px) 100vw, 750px" data-attachment-id="8972" data-permalink="https://thehanoichamomile.com/2021/12/18/cup-of-tea/dscf8381/" data-orig-file="https://thehanoichamomile.files.wordpress.com/2021/12/dscf8381.jpg" data-orig-size="1920,1280" data-comments-opened="1" data-image-meta="{&quot;aperture&quot;:&quot;3.2&quot;,&quot;credit&quot;:&quot;SING&quot;,&quot;camera&quot;:&quot;X-T20&quot;,&quot;caption&quot;:&quot;&quot;,&quot;created_timestamp&quot;:&quot;1564309419&quot;,&quot;copyright&quot;:&quot;SING&quot;,&quot;focal_length&quot;:&quot;21.4&quot;,&quot;iso&quot;:&quot;640&quot;,&quot;shutter_speed&quot;:&quot;0.0005&quot;,&quot;title&quot;:&quot;&quot;,&quot;orientation&quot;:&quot;1&quot;}" data-image-title="DSCF8381" data-image-description="" data-image-caption="" data-medium-file="https://thehanoichamomile.files.wordpress.com/2021/12/dscf8381.jpg?w=300" data-large-file="https://thehanoichamomile.files.wordpress.com/2021/12/dscf8381.jpg?w=750" /></a>
+		</div><!-- .entry-thumbnail -->
+		<div class="entry-summary">
+		<p>TẠM BIỆT CUP OF TEA Mặc dù Cup of Tea đã nói lời tạm biệt từ 18/10, nhưng đến hôm nay (sau 2 tháng), mình mới có thời gian để ngồi xem lại những tấm hình đã chụp ở COT, nhớ lại những khoảnh khắc, kỉ niệm đẹp vốn gắn bó với quán cafe xinh [&#8230;]</p>
+<a href="https://thehanoichamomile.com/2021/12/18/cup-of-tea/" class="more-link">Read More</a>			</div><!-- .entry-summary -->
+</article><!-- #post-## -->
+
+										
+	<nav class="navigation posts-navigation" aria-label="Posts">
+		<h2 class="screen-reader-text">Posts navigation</h2>
+		<div class="nav-links"><div class="nav-previous"><a href="https://thehanoichamomile.com/page/2/" >Older posts</a></div></div>
+	</nav>
+				
+				</main><!-- #main -->
+			</div><!-- #primary -->
+			
+<aside id="secondary" class="widget-area col-lg-offset-1 col-lg-3" role="complementary">
+		<section id="search-3" class="widget widget_search">	<form method="get" id="searchform" action="https://thehanoichamomile.com/">
+		<label for="s" class="screen-reader-text"><span>Search</span></label>
+		<input type="text" class="field" name="s" id="s" autocomplete="off" />
+		<button type="submit" class="submit" name="submit" id="searchsubmit"><span class="screen-out-text">Search</span></button>
+	</form>
+</section><section id="text-3" class="widget widget_text"><h2 class="widget-title">ABOUT ME</h2>			<div class="textwidget"><p><img loading="lazy" class="alignnone size-full wp-image-6646" src="https://thehanoichamomile.files.wordpress.com/2020/06/dbf23fb3-dba1-49ef-a02b-0fa95237ae41.jpg" alt="" width="750" height="750" /></p>
+<p><b>Blogger &amp; Youtuber</b></p>
+<p>Hi. Mình là Nam Anh. Chào mừng bạn đến với blog của mình. Đây là nơi mình thường xuyên chia sẻ về những câu chuyện nho nhỏ trong đời sống thường ngày của mình. Mình tin rằng, hạnh phúc đến từ những điều giản dị nhất. Hi vọng bạn sẽ tìm thấy được sự bình yên và một chút niềm vui khi đọc blog của mình.</p>
+</div>
+		</section><section id="wpcom_instagram_widget-7" class="widget widget_wpcom_instagram_widget"><h2 class="widget-title">Instagram</h2><div class="wpcom-instagram-images wpcom-instagram-columns-3">
+<a href="https://www.instagram.com/p/CatT_77rlY3/" target="_self"><div class="sq-bg-image" style="background-image: url(https://scontent-dfw5-1.cdninstagram.com/v/t51.29350-15/275136942_206569358336706_6764863002124989862_n.jpg?_nc_cat=110&#038;ccb=1-5&#038;_nc_sid=8ae9d6&#038;_nc_ohc=_ykXPWxBUokAX9QiHGg&#038;_nc_ht=scontent-dfw5-1.cdninstagram.com&#038;edm=ANo9K5cEAAAA&#038;oh=00_AT9DU19RcuS-yl1-GsfAO47ItfnkXXnQu0M49Aw6pVKp_g&#038;oe=6228693C)"><span class="screen-reader-text">Tủ sách của mình.</span></div></a>
+<a href="https://www.instagram.com/p/CZ56_WoLoIW/" target="_self"><div class="sq-bg-image" style="background-image: url(https://scontent-dfw5-1.cdninstagram.com/v/t51.29350-15/273742738_1125710891580034_4523853804027798088_n.jpg?_nc_cat=101&#038;ccb=1-5&#038;_nc_sid=8ae9d6&#038;_nc_ohc=X0eX8r9dtzoAX_zcT89&#038;_nc_ht=scontent-dfw5-1.cdninstagram.com&#038;edm=ANo9K5cEAAAA&#038;oh=00_AT97-8J_60K_Pg0c2F57PgIMOpFT_8ygUxfYQsMdQEO4wA&#038;oe=622769D0)"><span class="screen-reader-text">Chủ Nhật, ngày 13.02.2022.</span></div></a>
+<a href="https://www.instagram.com/p/CZjx23LvDq_/" target="_self"><div class="sq-bg-image" style="background-image: url(https://scontent-dfw5-1.cdninstagram.com/v/t51.29350-15/273219552_472921287784954_5841550786438577406_n.jpg?_nc_cat=110&#038;ccb=1-5&#038;_nc_sid=8ae9d6&#038;_nc_ohc=SJOcAcnwi9sAX_5AcH3&#038;_nc_ht=scontent-dfw5-1.cdninstagram.com&#038;edm=ANo9K5cEAAAA&#038;oh=00_AT8Rm98BlB9pDV6X5fN2BvJ4UqHOTyMZ76ELPNx1XVbmZA&#038;oe=62274BD9)"><span class="screen-reader-text">ĂN TẾT Ở QUÊ</span></div></a>
+<a href="https://www.instagram.com/p/CZEuI4rPB52/" target="_self"><div class="sq-bg-image" style="background-image: url(https://scontent-dfw5-1.cdninstagram.com/v/t51.29350-15/272261110_957741025179535_5379935174480473734_n.jpg?_nc_cat=110&#038;ccb=1-5&#038;_nc_sid=8ae9d6&#038;_nc_ohc=DmQAzChyXv8AX-NwVhX&#038;_nc_oc=AQnF1TNtfenU7w6UKRSJN2yHSR1tg2LGjB47r89oZGzbGlqb-EhCgXpuUSCA2e36Avs&#038;_nc_ht=scontent-dfw5-1.cdninstagram.com&#038;edm=ANo9K5cEAAAA&#038;oh=00_AT-5gciy_RSzSfioTnvevhGXJO01pn0JmyLZ5d0ni9Hgig&#038;oe=6227B10A)"><span class="screen-reader-text">Hội bạn thân thời đại học nay đã trở thành hội bỉm sữa, ngoài trừ một vài thành phần, như mình chẳng hạn :)</span></div></a>
+<a href="https://www.instagram.com/p/CZBM80NLVCS/" target="_self"><div class="sq-bg-image" style="background-image: url(https://scontent-dfw5-2.cdninstagram.com/v/t51.29350-15/272142827_443679120795772_5466746551031026193_n.jpg?_nc_cat=100&#038;ccb=1-5&#038;_nc_sid=8ae9d6&#038;_nc_ohc=yUx7W8kZyC0AX86oJ9r&#038;_nc_ht=scontent-dfw5-2.cdninstagram.com&#038;edm=ANo9K5cEAAAA&#038;oh=00_AT95MWVriy76m7auJfUZJpzwLYfNOS81ISUnHSOCjrQO5Q&#038;oe=622704A8)"><span class="screen-reader-text">MY DESK SETUP 2022</span></div></a>
+<a href="https://www.instagram.com/p/CYs4lK7rgdo/" target="_self"><div class="sq-bg-image" style="background-image: url(https://scontent-dfw5-1.cdninstagram.com/v/t51.29350-15/271791044_614172976359691_3050689604266239664_n.jpg?_nc_cat=101&#038;ccb=1-5&#038;_nc_sid=8ae9d6&#038;_nc_ohc=5Ya1WnkG-pYAX8LkG1S&#038;_nc_ht=scontent-dfw5-1.cdninstagram.com&#038;edm=ANo9K5cEAAAA&#038;oh=00_AT9KpxSGNAXgbk4OxWBWZNKevZYgIxZFuAZSYLBNpcUhVg&#038;oe=62281377)"><span class="screen-reader-text">Kira trong thế giới Lofi trông sẽ như thế này.</span></div></a>
+<a href="https://www.instagram.com/p/CYYuApNLFdm/" target="_self"><div class="sq-bg-image" style="background-image: url(https://scontent-dfw5-2.cdninstagram.com/v/t51.29350-15/271286855_261301702771900_4863263577975004402_n.jpg?_nc_cat=102&#038;ccb=1-5&#038;_nc_sid=8ae9d6&#038;_nc_ohc=EH6Ibn1lbwoAX-J638p&#038;_nc_ht=scontent-dfw5-2.cdninstagram.com&#038;edm=ANo9K5cEAAAA&#038;oh=00_AT_S2WW_g1xBOgRFGeG9Zqh5NG5QIIZEUWQB-k3dtJmy0g&#038;oe=62273D52)"><span class="screen-reader-text">Trong bức ảnh: Kira năm 2021. Ngoài đời: Kira năm 2022 :) New Habit, New Goal. Let’s Do It!</span></div></a>
+<a href="https://www.instagram.com/p/CYTmwJLPB5q/" target="_self"><div class="sq-bg-image" style="background-image: url(https://scontent-dfw5-2.cdninstagram.com/v/t51.29350-15/271278337_646986076489557_1476134220536465193_n.jpg?_nc_cat=107&#038;ccb=1-5&#038;_nc_sid=8ae9d6&#038;_nc_ohc=QbUoJA9WfDUAX_3oXjO&#038;_nc_ht=scontent-dfw5-2.cdninstagram.com&#038;edm=ANo9K5cEAAAA&#038;oh=00_AT8Doqyqw1rB4zaXwUS86gRwVmZR6FjIiBMq_BZucwpv3g&#038;oe=6228CF4B)"><span class="screen-reader-text">THÁNG 1, ĐỌC GÌ? XEM GÌ? NGHE GÌ?</span></div></a>
+<a href="https://www.instagram.com/p/CYNphfYrpdJ/" target="_self"><div class="sq-bg-image" style="background-image: url(https://scontent-dfw5-2.cdninstagram.com/v/t51.29350-15/270937884_341407937511982_7121045324984124961_n.jpg?_nc_cat=106&#038;ccb=1-5&#038;_nc_sid=8ae9d6&#038;_nc_ohc=3FbWj82b2DIAX9wVvB8&#038;_nc_ht=scontent-dfw5-2.cdninstagram.com&#038;edm=ANo9K5cEAAAA&#038;oh=00_AT-K8GE3aIUbopnkMLkhU6Z-Rpxt1fz_Sbioql_e2_emhw&#038;oe=62287776)"><span class="screen-reader-text">Một góc làm việc tối giản nhưng vẫn ấm áp. Hi vọng năm 2022 vẫn sẽ là một năm năng suất trong công việc làm sáng tạo! </span></div></a>
+</div>
+</section><section id="archives-11" class="widget widget_archive"><h2 class="widget-title">Archives</h2>
+			<ul>
+					<li><a href='https://thehanoichamomile.com/2022/03/'>March 2022</a>&nbsp;(2)</li>
+	<li><a href='https://thehanoichamomile.com/2022/02/'>February 2022</a>&nbsp;(3)</li>
+	<li><a href='https://thehanoichamomile.com/2022/01/'>January 2022</a>&nbsp;(3)</li>
+	<li><a href='https://thehanoichamomile.com/2021/12/'>December 2021</a>&nbsp;(5)</li>
+	<li><a href='https://thehanoichamomile.com/2021/11/'>November 2021</a>&nbsp;(3)</li>
+	<li><a href='https://thehanoichamomile.com/2021/10/'>October 2021</a>&nbsp;(4)</li>
+	<li><a href='https://thehanoichamomile.com/2021/09/'>September 2021</a>&nbsp;(5)</li>
+	<li><a href='https://thehanoichamomile.com/2021/08/'>August 2021</a>&nbsp;(4)</li>
+	<li><a href='https://thehanoichamomile.com/2021/07/'>July 2021</a>&nbsp;(2)</li>
+	<li><a href='https://thehanoichamomile.com/2021/06/'>June 2021</a>&nbsp;(5)</li>
+	<li><a href='https://thehanoichamomile.com/2021/05/'>May 2021</a>&nbsp;(5)</li>
+	<li><a href='https://thehanoichamomile.com/2021/04/'>April 2021</a>&nbsp;(1)</li>
+	<li><a href='https://thehanoichamomile.com/2021/03/'>March 2021</a>&nbsp;(4)</li>
+	<li><a href='https://thehanoichamomile.com/2021/02/'>February 2021</a>&nbsp;(4)</li>
+	<li><a href='https://thehanoichamomile.com/2021/01/'>January 2021</a>&nbsp;(4)</li>
+	<li><a href='https://thehanoichamomile.com/2020/12/'>December 2020</a>&nbsp;(7)</li>
+	<li><a href='https://thehanoichamomile.com/2020/11/'>November 2020</a>&nbsp;(7)</li>
+	<li><a href='https://thehanoichamomile.com/2020/10/'>October 2020</a>&nbsp;(7)</li>
+	<li><a href='https://thehanoichamomile.com/2020/09/'>September 2020</a>&nbsp;(9)</li>
+	<li><a href='https://thehanoichamomile.com/2020/08/'>August 2020</a>&nbsp;(8)</li>
+	<li><a href='https://thehanoichamomile.com/2020/07/'>July 2020</a>&nbsp;(10)</li>
+	<li><a href='https://thehanoichamomile.com/2020/06/'>June 2020</a>&nbsp;(7)</li>
+	<li><a href='https://thehanoichamomile.com/2020/05/'>May 2020</a>&nbsp;(7)</li>
+	<li><a href='https://thehanoichamomile.com/2020/04/'>April 2020</a>&nbsp;(9)</li>
+	<li><a href='https://thehanoichamomile.com/2020/03/'>March 2020</a>&nbsp;(11)</li>
+	<li><a href='https://thehanoichamomile.com/2020/02/'>February 2020</a>&nbsp;(8)</li>
+	<li><a href='https://thehanoichamomile.com/2020/01/'>January 2020</a>&nbsp;(6)</li>
+	<li><a href='https://thehanoichamomile.com/2019/12/'>December 2019</a>&nbsp;(9)</li>
+	<li><a href='https://thehanoichamomile.com/2019/11/'>November 2019</a>&nbsp;(9)</li>
+	<li><a href='https://thehanoichamomile.com/2019/10/'>October 2019</a>&nbsp;(8)</li>
+	<li><a href='https://thehanoichamomile.com/2019/09/'>September 2019</a>&nbsp;(6)</li>
+	<li><a href='https://thehanoichamomile.com/2019/08/'>August 2019</a>&nbsp;(9)</li>
+	<li><a href='https://thehanoichamomile.com/2019/07/'>July 2019</a>&nbsp;(13)</li>
+	<li><a href='https://thehanoichamomile.com/2019/06/'>June 2019</a>&nbsp;(10)</li>
+	<li><a href='https://thehanoichamomile.com/2019/05/'>May 2019</a>&nbsp;(11)</li>
+	<li><a href='https://thehanoichamomile.com/2019/04/'>April 2019</a>&nbsp;(12)</li>
+	<li><a href='https://thehanoichamomile.com/2019/03/'>March 2019</a>&nbsp;(12)</li>
+	<li><a href='https://thehanoichamomile.com/2019/02/'>February 2019</a>&nbsp;(10)</li>
+	<li><a href='https://thehanoichamomile.com/2019/01/'>January 2019</a>&nbsp;(9)</li>
+	<li><a href='https://thehanoichamomile.com/2018/12/'>December 2018</a>&nbsp;(11)</li>
+	<li><a href='https://thehanoichamomile.com/2018/11/'>November 2018</a>&nbsp;(12)</li>
+	<li><a href='https://thehanoichamomile.com/2018/10/'>October 2018</a>&nbsp;(13)</li>
+	<li><a href='https://thehanoichamomile.com/2018/09/'>September 2018</a>&nbsp;(11)</li>
+	<li><a href='https://thehanoichamomile.com/2018/08/'>August 2018</a>&nbsp;(20)</li>
+	<li><a href='https://thehanoichamomile.com/2018/07/'>July 2018</a>&nbsp;(17)</li>
+			</ul>
+
+			</section><section id="categories-9" class="widget widget_categories"><h2 class="widget-title">Categories</h2>
+			<ul>
+					<li class="cat-item cat-item-231163"><a href="https://thehanoichamomile.com/category/am-nhac/">Âm nhạc</a> (3)
+</li>
+	<li class="cat-item cat-item-722808436"><a href="https://thehanoichamomile.com/category/chuyen-lam-content/">Chuyện làm content</a> (6)
+</li>
+	<li class="cat-item cat-item-140416589"><a href="https://thehanoichamomile.com/category/cuoc-song-o-ha-noi/">Cuộc sống ở Hà Nội</a> (39)
+</li>
+	<li class="cat-item cat-item-131107976"><a href="https://thehanoichamomile.com/category/cuoc-song-o-nhat-ban/">Cuộc sống ở Nhật Bản</a> (27)
+</li>
+	<li class="cat-item cat-item-3205"><a href="https://thehanoichamomile.com/category/english/">English</a> (1)
+</li>
+	<li class="cat-item cat-item-579534928"><a href="https://thehanoichamomile.com/category/hanh-trinh-cua-minh/">Hành trình của mình</a> (54)
+</li>
+	<li class="cat-item cat-item-2352659"><a href="https://thehanoichamomile.com/category/hoc-ngoai-ngu/">Học ngoại ngữ</a> (25)
+</li>
+	<li class="cat-item cat-item-217331841"><a href="https://thehanoichamomile.com/category/hoc-va-nghien-cuu/">Học và nghiên cứu</a> (2)
+</li>
+	<li class="cat-item cat-item-116104787"><a href="https://thehanoichamomile.com/category/kham-pha-du-lich/">Khám phá &amp; Du lịch</a> (14)
+</li>
+	<li class="cat-item cat-item-101365"><a href="https://thehanoichamomile.com/category/khoa-hoc/">Khoa học</a> (1)
+</li>
+	<li class="cat-item cat-item-685237166"><a href="https://thehanoichamomile.com/category/life-at-vju/">Life at VJU</a> (15)
+</li>
+	<li class="cat-item cat-item-278"><a href="https://thehanoichamomile.com/category/lifestyle/">Lifestyle</a> (52)
+</li>
+	<li class="cat-item cat-item-116588"><a href="https://thehanoichamomile.com/category/mindfulness/">Mindfulness</a> (7)
+</li>
+	<li class="cat-item cat-item-65161"><a href="https://thehanoichamomile.com/category/minimalism/">Minimalism</a> (29)
+</li>
+	<li class="cat-item cat-item-2978419"><a href="https://thehanoichamomile.com/category/nau-an/">Nấu Ăn</a> (6)
+</li>
+	<li class="cat-item cat-item-12881316"><a href="https://thehanoichamomile.com/category/nhat-ban/">Nhật Bản</a> (18)
+</li>
+	<li class="cat-item cat-item-106676"><a href="https://thehanoichamomile.com/category/nhat-ky/">Nhật ký</a> (98)
+</li>
+	<li class="cat-item cat-item-2704"><a href="https://thehanoichamomile.com/category/productivity/">Productivity</a> (35)
+</li>
+	<li class="cat-item cat-item-171893"><a href="https://thehanoichamomile.com/category/suc-khoe/">Sức khỏe</a> (6)
+</li>
+	<li class="cat-item cat-item-5048268"><a href="https://thehanoichamomile.com/category/thoi-quen/">Thói quen</a> (11)
+</li>
+	<li class="cat-item cat-item-728412789"><a href="https://thehanoichamomile.com/category/doc-gi-xem-gi-nghe-gi/">Đọc gì, xem gì, nghe gì?</a> (2)
+</li>
+	<li class="cat-item cat-item-4108939"><a href="https://thehanoichamomile.com/category/doc-sach/">Đọc sách</a> (17)
+</li>
+	<li class="cat-item cat-item-5890"><a href="https://thehanoichamomile.com/category/%e6%97%a5%e6%9c%ac%e8%aa%9e/">日本語</a> (19)
+</li>
+			</ul>
+
+			</section></aside><!-- #secondary -->
+		</div><!-- .row -->
+	</div><!-- .container -->
+</section><!-- #main -->
+
+
+		<footer id="colophon" class="site-footer" role="contentinfo">
+						<section id="full-footer">
+				
+<aside id="footerfull" class="widget-area" role="complementary">
+	<section id="wpcom_instagram_widget-13" class="widget widget_wpcom_instagram_widget"><h2 class="widget-title">Instagram</h2><div class="wpcom-instagram-images wpcom-instagram-columns-2">
+<a href="https://www.instagram.com/p/CatT_77rlY3/" target="_self"><div class="sq-bg-image" style="background-image: url(https://scontent-lax3-1.cdninstagram.com/v/t51.29350-15/275136942_206569358336706_6764863002124989862_n.jpg?_nc_cat=110&#038;ccb=1-5&#038;_nc_sid=8ae9d6&#038;_nc_ohc=_ykXPWxBUokAX96weGS&#038;_nc_ht=scontent-lax3-1.cdninstagram.com&#038;edm=ANo9K5cEAAAA&#038;oh=00_AT-jm6ILUwCvSgwGEOFKysJSy4wk4CxeSACy7Nv9Q7EHxQ&#038;oe=6228693C)"><span class="screen-reader-text">Tủ sách của mình.</span></div></a>
+<a href="https://www.instagram.com/p/CZ56_WoLoIW/" target="_self"><div class="sq-bg-image" style="background-image: url(https://scontent-lax3-2.cdninstagram.com/v/t51.29350-15/273742738_1125710891580034_4523853804027798088_n.jpg?_nc_cat=101&#038;ccb=1-5&#038;_nc_sid=8ae9d6&#038;_nc_ohc=X0eX8r9dtzoAX_IBJ2e&#038;_nc_ht=scontent-lax3-2.cdninstagram.com&#038;edm=ANo9K5cEAAAA&#038;oh=00_AT8_jMLuLk8ViX32wCk1RkY6aFALJjvAbOVdvjkYdWrWgQ&#038;oe=622769D0)"><span class="screen-reader-text">Chủ Nhật, ngày 13.02.2022.</span></div></a>
+<a href="https://www.instagram.com/p/CZjx23LvDq_/" target="_self"><div class="sq-bg-image" style="background-image: url(https://scontent-lax3-1.cdninstagram.com/v/t51.29350-15/273219552_472921287784954_5841550786438577406_n.jpg?_nc_cat=110&#038;ccb=1-5&#038;_nc_sid=8ae9d6&#038;_nc_ohc=SJOcAcnwi9sAX9IzYMv&#038;_nc_ht=scontent-lax3-1.cdninstagram.com&#038;edm=ANo9K5cEAAAA&#038;oh=00_AT8q6AvMTMcqGnx6WdmlgmyIMMJtw8Gp1b5J5rAJ62FnLQ&#038;oe=62274BD9)"><span class="screen-reader-text">ĂN TẾT Ở QUÊ</span></div></a>
+<a href="https://www.instagram.com/p/CZEuI4rPB52/" target="_self"><div class="sq-bg-image" style="background-image: url(https://scontent-lax3-1.cdninstagram.com/v/t51.29350-15/272261110_957741025179535_5379935174480473734_n.jpg?_nc_cat=110&#038;ccb=1-5&#038;_nc_sid=8ae9d6&#038;_nc_ohc=DmQAzChyXv8AX9MbRZo&#038;_nc_oc=AQm9cUg87opvqqhzKiNbVfp1W_RluDeC9UaQ6deHYZSBoLmrh2fsVQHgHNLF541asDA&#038;_nc_ht=scontent-lax3-1.cdninstagram.com&#038;edm=ANo9K5cEAAAA&#038;oh=00_AT-wAiHaQmpn18JQ0pnDvmfwBH_6ZNmD6JB1_qmyR4lj_A&#038;oe=6227B10A)"><span class="screen-reader-text">Hội bạn thân thời đại học nay đã trở thành hội bỉm sữa, ngoài trừ một vài thành phần, như mình chẳng hạn :)</span></div></a>
+<a href="https://www.instagram.com/p/CZBM80NLVCS/" target="_self"><div class="sq-bg-image" style="background-image: url(https://scontent-lax3-2.cdninstagram.com/v/t51.29350-15/272142827_443679120795772_5466746551031026193_n.jpg?_nc_cat=100&#038;ccb=1-5&#038;_nc_sid=8ae9d6&#038;_nc_ohc=yUx7W8kZyC0AX9oqn3W&#038;_nc_ht=scontent-lax3-2.cdninstagram.com&#038;edm=ANo9K5cEAAAA&#038;oh=00_AT-SOWjPsr6l3o-Pw9RKUhwCZxEyzPQRQPhGfi_AFdnrjA&#038;oe=622704A8)"><span class="screen-reader-text">MY DESK SETUP 2022</span></div></a>
+<a href="https://www.instagram.com/p/CYs4lK7rgdo/" target="_self"><div class="sq-bg-image" style="background-image: url(https://scontent-lax3-2.cdninstagram.com/v/t51.29350-15/271791044_614172976359691_3050689604266239664_n.jpg?_nc_cat=101&#038;ccb=1-5&#038;_nc_sid=8ae9d6&#038;_nc_ohc=5Ya1WnkG-pYAX8PTaER&#038;_nc_ht=scontent-lax3-2.cdninstagram.com&#038;edm=ANo9K5cEAAAA&#038;oh=00_AT8Q_TyTgoTb_aIYDgu590_f5N2TNjQj0e9OrIVaqgRprg&#038;oe=62281377)"><span class="screen-reader-text">Kira trong thế giới Lofi trông sẽ như thế này.</span></div></a>
+</div>
+</section></aside><!-- #footerinstagram -->
+			</section><!-- #instagram-footer -->
+									<section id="pre-footer" class="pre-footer">
+				<div class="container">
+					<div class="row">
+						
+<aside id="footerfirst" class="widget-area col-md-4" role="complementary">
+		<section id="wp_tag_cloud-5" class="widget wp_widget_tag_cloud"><h2 class="widget-title">Tags</h2><div style="overflow:hidden"><a href="https://thehanoichamomile.com/tag/daily-life/" class="tag-cloud-link tag-link-922 tag-link-position-1" style="font-size: 10.222222222222pt;" aria-label="Daily life (4 items)">Daily life</a>
+<a href="https://thehanoichamomile.com/tag/decluttering/" class="tag-cloud-link tag-link-161759 tag-link-position-2" style="font-size: 10.222222222222pt;" aria-label="Decluttering (4 items)">Decluttering</a>
+<a href="https://thehanoichamomile.com/tag/du-hoc/" class="tag-cloud-link tag-link-234926 tag-link-position-3" style="font-size: 14.666666666667pt;" aria-label="Du học (7 items)">Du học</a>
+<a href="https://thehanoichamomile.com/tag/du-lich/" class="tag-cloud-link tag-link-305991 tag-link-position-4" style="font-size: 13.555555555556pt;" aria-label="Du lịch (6 items)">Du lịch</a>
+<a href="https://thehanoichamomile.com/tag/don-dep/" class="tag-cloud-link tag-link-16517194 tag-link-position-5" style="font-size: 10.222222222222pt;" aria-label="Dọn Dẹp (4 items)">Dọn Dẹp</a>
+<a href="https://thehanoichamomile.com/tag/featured/" class="tag-cloud-link tag-link-35890 tag-link-position-6" style="font-size: 8pt;" aria-label="featured (3 items)">featured</a>
+<a href="https://thehanoichamomile.com/tag/han-quoc/" class="tag-cloud-link tag-link-7325423 tag-link-position-7" style="font-size: 13.555555555556pt;" aria-label="Hàn Quốc (6 items)">Hàn Quốc</a>
+<a href="https://thehanoichamomile.com/tag/hoc-ngoai-ngu/" class="tag-cloud-link tag-link-2352659 tag-link-position-8" style="font-size: 10.222222222222pt;" aria-label="Học ngoại ngữ (4 items)">Học ngoại ngữ</a>
+<a href="https://thehanoichamomile.com/tag/kham-pha/" class="tag-cloud-link tag-link-355440 tag-link-position-9" style="font-size: 19.333333333333pt;" aria-label="Khám Phá (12 items)">Khám Phá</a>
+<a href="https://thehanoichamomile.com/tag/korea/" class="tag-cloud-link tag-link-3956 tag-link-position-10" style="font-size: 10.222222222222pt;" aria-label="Korea (4 items)">Korea</a>
+<a href="https://thehanoichamomile.com/tag/lifestyle/" class="tag-cloud-link tag-link-278 tag-link-position-11" style="font-size: 16.888888888889pt;" aria-label="Lifestyle (9 items)">Lifestyle</a>
+<a href="https://thehanoichamomile.com/tag/minatomirai/" class="tag-cloud-link tag-link-2243801 tag-link-position-12" style="font-size: 10.222222222222pt;" aria-label="Minatomirai (4 items)">Minatomirai</a>
+<a href="https://thehanoichamomile.com/tag/minimalism/" class="tag-cloud-link tag-link-65161 tag-link-position-13" style="font-size: 18.666666666667pt;" aria-label="Minimalism (11 items)">Minimalism</a>
+<a href="https://thehanoichamomile.com/tag/nhat-ban/" class="tag-cloud-link tag-link-12881316 tag-link-position-14" style="font-size: 22pt;" aria-label="Nhật Bản (16 items)">Nhật Bản</a>
+<a href="https://thehanoichamomile.com/tag/nhat-ban/" class="tag-cloud-link tag-link-240461198 tag-link-position-15" style="font-size: 14.666666666667pt;" aria-label="Nhật Bản (7 items)">Nhật Bản</a>
+<a href="https://thehanoichamomile.com/tag/nau-an/" class="tag-cloud-link tag-link-2978419 tag-link-position-16" style="font-size: 10.222222222222pt;" aria-label="Nấu Ăn (4 items)">Nấu Ăn</a>
+<a href="https://thehanoichamomile.com/tag/nau-an/" class="tag-cloud-link tag-link-6096 tag-link-position-17" style="font-size: 10.222222222222pt;" aria-label="Nấu ăn (4 items)">Nấu ăn</a>
+<a href="https://thehanoichamomile.com/tag/starbucks/" class="tag-cloud-link tag-link-21311 tag-link-position-18" style="font-size: 10.222222222222pt;" aria-label="Starbucks (4 items)">Starbucks</a>
+<a href="https://thehanoichamomile.com/tag/tsutaya/" class="tag-cloud-link tag-link-7754048 tag-link-position-19" style="font-size: 13.555555555556pt;" aria-label="Tsutaya (6 items)">Tsutaya</a>
+<a href="https://thehanoichamomile.com/tag/toi-gian/" class="tag-cloud-link tag-link-52188209 tag-link-position-20" style="font-size: 17.777777777778pt;" aria-label="Tối giản (10 items)">Tối giản</a></div></section></aside><!-- #footerfirst -->
+
+<aside id="footersecond" class="widget-area col-md-4" role="complementary">
+		<section id="facebook-likebox-9" class="widget widget_facebook_likebox"><h2 class="widget-title"><a href="https://www.facebook.com/thehanoichamomile">Follow on Facebook</a></h2>		<div id="fb-root"></div>
+		<div class="fb-page" data-href="https://www.facebook.com/thehanoichamomile" data-width="340"  data-height="432" data-hide-cover="false" data-show-facepile="true" data-tabs="false" data-hide-cta="false" data-small-header="false">
+		<div class="fb-xfbml-parse-ignore"><blockquote cite="https://www.facebook.com/thehanoichamomile"><a href="https://www.facebook.com/thehanoichamomile">Follow on Facebook</a></blockquote></div>
+		</div>
+		</section></aside><!-- #footersecond -->
+
+<aside id="footerthird" class="widget-area col-md-4" role="complementary">
+		<section id="blog_subscription-11" class="widget widget_blog_subscription jetpack_subscription_widget"><h2 class="widget-title"><label for="subscribe-field">SUBSCRIBE</label></h2>
+
+			<form
+				action="https://subscribe.wordpress.com"
+				method="post"
+				accept-charset="utf-8"
+				id="subscribe-blog"
+			>
+				<p>Subscribe nếu bạn muốn theo dõi các bài viết tiếp theo của mình nhé!</p>
+					<div class="jetpack-subscribe-count">
+						<p>
+						Join 3,912 other followers						</p>
+					</div>
+									<p id="subscribe-email">
+					<label
+						id="subscribe-field-label"
+						for="subscribe-field"
+						class="screen-reader-text"
+					>
+						Email Address:					</label>
+
+					<input
+							type="email"
+							name="email"
+							
+							style="width: 95%; padding: 1px 10px"
+							placeholder="Enter your email address"
+							value=""
+							id="subscribe-field"
+						/>				</p>
+
+				<p id="subscribe-submit"
+									>
+					<input type="hidden" name="action" value="subscribe"/>
+					<input type="hidden" name="blog_id" value="148320211"/>
+					<input type="hidden" name="source" value="https://thehanoichamomile.com/"/>
+					<input type="hidden" name="sub-type" value="widget"/>
+					<input type="hidden" name="redirect_fragment" value="subscribe-blog"/>
+					<input type="hidden" id="_wpnonce" name="_wpnonce" value="fd96fd6c22" />					<button type="submit"
+													class="wp-block-button__link"
+																	>
+						Subscribe					</button>
+				</p>
+			</form>
+			
+</section></aside><!-- #footerthird -->
+													<div class="textcenter-xs social-footer">
+										<nav class="jetpack-social-navigation jetpack-social-navigation-genericons" aria-label="Social Links Menu">
+			<div class="menu-social-container"><ul id="menu-social-2" class="menu"><li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-106"><a href="https://www.facebook.com/kiranguyen2512"><span class="screen-reader-text">Facebook</span></a></li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-107"><a href="https://www.instagram.com/kiranguyen__"><span class="screen-reader-text">Instagram</span></a></li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-336"><a href="https://www.youtube.com/channel/UCZv-924OFOCEX6A8hcvdisQ?view_as=subscriber"><span class="screen-reader-text">Youtube</span></a></li>
+</ul></div>		</nav><!-- .jetpack-social-navigation -->
+									</div><!-- .social-footer -->
+											</div><!-- .row -->
+				</div><!-- .container -->
+			</section><!-- #main -->
+						<div class="site-info">
+				<div class="container">
+					<div class="row">
+						<div class="col-md-12">
+							<p class="info textcenter-xs">
+								<a href="https://wordpress.com/?ref=footer_custom_com" rel="nofollow">Website Built with WordPress.com</a>.
+								
+															</p>
+						</div><!-- .col-md-12 -->
+					</div><!-- .row -->
+				</div><!-- .contaniner -->
+			</div><!-- .site-info -->
+		</footer><!-- #colophon -->
+	</div><!-- #page -->
+
+			<script type="text/javascript">
+		//<![CDATA[
+		var infiniteScroll = JSON.parse( decodeURIComponent( '%7B%22settings%22%3A%7B%22id%22%3A%22main%22%2C%22ajaxurl%22%3A%22https%3A%5C%2F%5C%2Fthehanoichamomile.com%5C%2F%3Finfinity%3Dscrolling%22%2C%22type%22%3A%22click%22%2C%22wrapper%22%3Afalse%2C%22wrapper_class%22%3A%22infinite-wrap%22%2C%22footer%22%3A%22colophon%22%2C%22click_handle%22%3A%221%22%2C%22text%22%3A%22Older%20posts%22%2C%22totop%22%3A%22Scroll%20back%20to%20top%22%2C%22currentday%22%3A%2218.12.21%22%2C%22order%22%3A%22DESC%22%2C%22scripts%22%3A%5B%5D%2C%22styles%22%3A%5B%5D%2C%22google_analytics%22%3Afalse%2C%22offset%22%3A1%2C%22history%22%3A%7B%22host%22%3A%22thehanoichamomile.com%22%2C%22path%22%3A%22%5C%2Fpage%5C%2F%25d%5C%2F%22%2C%22use_trailing_slashes%22%3Atrue%2C%22parameters%22%3A%22%22%7D%2C%22query_args%22%3A%7B%22error%22%3A%22%22%2C%22m%22%3A%22%22%2C%22p%22%3A0%2C%22post_parent%22%3A%22%22%2C%22subpost%22%3A%22%22%2C%22subpost_id%22%3A%22%22%2C%22attachment%22%3A%22%22%2C%22attachment_id%22%3A0%2C%22name%22%3A%22%22%2C%22pagename%22%3A%22%22%2C%22page_id%22%3A0%2C%22second%22%3A%22%22%2C%22minute%22%3A%22%22%2C%22hour%22%3A%22%22%2C%22day%22%3A0%2C%22monthnum%22%3A0%2C%22year%22%3A0%2C%22w%22%3A0%2C%22category_name%22%3A%22%22%2C%22tag%22%3A%22%22%2C%22cat%22%3A%22%22%2C%22tag_id%22%3A%22%22%2C%22author%22%3A%22%22%2C%22author_name%22%3A%22%22%2C%22feed%22%3A%22%22%2C%22tb%22%3A%22%22%2C%22paged%22%3A0%2C%22meta_key%22%3A%22%22%2C%22meta_value%22%3A%22%22%2C%22preview%22%3A%22%22%2C%22s%22%3A%22%22%2C%22sentence%22%3A%22%22%2C%22title%22%3A%22%22%2C%22fields%22%3A%22%22%2C%22menu_order%22%3A%22%22%2C%22embed%22%3A%22%22%2C%22category__in%22%3A%5B%5D%2C%22category__not_in%22%3A%5B%5D%2C%22category__and%22%3A%5B%5D%2C%22post__in%22%3A%5B%5D%2C%22post__not_in%22%3A%5B%5D%2C%22post_name__in%22%3A%5B%5D%2C%22tag__in%22%3A%5B%5D%2C%22tag__not_in%22%3A%5B%5D%2C%22tag__and%22%3A%5B%5D%2C%22tag_slug__in%22%3A%5B%5D%2C%22tag_slug__and%22%3A%5B%5D%2C%22post_parent__in%22%3A%5B%5D%2C%22post_parent__not_in%22%3A%5B%5D%2C%22author__in%22%3A%5B%5D%2C%22author__not_in%22%3A%5B%5D%2C%22lazy_load_term_meta%22%3Afalse%2C%22posts_per_page%22%3A10%2C%22ignore_sticky_posts%22%3Afalse%2C%22suppress_filters%22%3Afalse%2C%22cache_results%22%3Afalse%2C%22update_post_term_cache%22%3Atrue%2C%22update_post_meta_cache%22%3Atrue%2C%22post_type%22%3A%22%22%2C%22nopaging%22%3Afalse%2C%22comments_per_page%22%3A%2250%22%2C%22no_found_rows%22%3Afalse%2C%22order%22%3A%22DESC%22%7D%2C%22query_before%22%3A%222022-03-05%2013%3A39%3A30%22%2C%22last_post_date%22%3A%222021-12-18%2009%3A13%3A24%22%2C%22body_class%22%3A%22infinite-scroll%22%2C%22loading_text%22%3A%22Loading%20new%20page%22%2C%22stats%22%3A%22blog%3D148320211%26v%3Dwpcom%26tz%3D7%26user_id%3D0%26subd%3Dthehanoichamomile%26x_pagetype%3Dinfinite-click%22%7D%7D' ) );
+		//]]>
+		</script>
+		<!--  -->
+<script src='//0.gravatar.com/js/gprofiles.js?ver=202209z' id='grofiles-cards-js'></script>
+<script id='wpgroho-js-extra'>
+var WPGroHo = {"my_hash":""};
+</script>
+<script crossorigin='anonymous' type='text/javascript' src='https://s0.wp.com/wp-content/mu-plugins/gravatar-hovercards/wpgroho.js?m=1610363240h'></script>
+
+	<script>
+		// Initialize and attach hovercards to all gravatars
+		( function() {
+			function init() {
+				if ( typeof Gravatar === 'undefined' ) {
+					return;
+				}
+
+				if ( typeof Gravatar.init !== 'function' ) {
+					return;
+				}
+
+				Gravatar.profile_cb = function ( hash, id ) {
+					WPGroHo.syncProfileData( hash, id );
+				};
+
+				Gravatar.my_hash = WPGroHo.my_hash;
+				Gravatar.init( 'body', '#wp-admin-bar-my-account' );
+			}
+
+			if ( document.readyState !== 'loading' ) {
+				init();
+			} else {
+				document.addEventListener( 'DOMContentLoaded', init );
+			}
+		} )();
+	</script>
+
+		<div style="display:none">
+	</div>
+<script id='highlander-comments-js-extra'>
+var HighlanderComments = {"loggingInText":"Logging In\u2026","submittingText":"Posting Comment\u2026","postCommentText":"Post Comment","connectingToText":"Connecting to %s","commentingAsText":"%1$s: You are commenting using your %2$s account.","logoutText":"Log Out","loginText":"Log In","connectURL":"https:\/\/thehanoichamomile.wordpress.com\/public.api\/connect\/?action=request&domain=thehanoichamomile.com","logoutURL":"https:\/\/thehanoichamomile.wordpress.com\/wp-login.php?action=logout&_wpnonce=4491a61d7b","homeURL":"https:\/\/thehanoichamomile.com\/","postID":"9108","gravDefault":"identicon","enterACommentError":"Please enter a comment","enterEmailError":"Please enter your email address here","invalidEmailError":"Invalid email address","enterAuthorError":"Please enter your name here","gravatarFromEmail":"This picture will show whenever you leave a comment. Click to customize it.","logInToExternalAccount":"Log in to use details from one of these accounts.","change":"Change","changeAccount":"Change Account","comment_registration":"0","userIsLoggedIn":"","isJetpack":"","text_direction":"ltr"};
+</script>
+<script crossorigin='anonymous' type='text/javascript' src='https://s0.wp.com/_static/??/wp-content/js/textarea-autosize.min.js,/wp-content/mu-plugins/highlander-comments/script.js?m=1645810379j'></script>
+	<div id="actionbar" style="display: none;"
+			class="actnbr-premium-rosalie actnbr-has-follow">
+		<ul>
+								<li class="actnbr-btn actnbr-hidden">
+								<a class="actnbr-action actnbr-actn-follow " href="">
+			<svg class="gridicon gridicons-reader-follow" height="24" width="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g><path d="M23 16v2h-3v3h-2v-3h-3v-2h3v-3h2v3h3zM20 2v9h-4v3h-3v4H4c-1.1 0-2-.9-2-2V2h18zM8 13v-1H4v1h4zm3-3H4v1h7v-1zm0-2H4v1h7V8zm7-4H4v2h14V4z"/></g></svg><span>Follow</span>
+		</a>
+		<a class="actnbr-action actnbr-actn-following  no-display" href="">
+			<svg class="gridicon gridicons-reader-following" height="24" width="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g><path d="M23 13.482L15.508 21 12 17.4l1.412-1.388 2.106 2.188 6.094-6.094L23 13.482zm-7.455 1.862L20 10.89V2H2v14c0 1.1.9 2 2 2h4.538l4.913-4.832 2.095 2.176zM8 13H4v-1h4v1zm3-2H4v-1h7v1zm0-2H4V8h7v1zm7-3H4V4h14v2z"/></g></svg><span>Following</span>
+		</a>
+							<div class="actnbr-popover tip tip-top-left actnbr-notice" id="follow-bubble">
+							<div class="tip-arrow"></div>
+							<div class="tip-inner actnbr-follow-bubble">
+															<ul>
+											<li class="actnbr-sitename">
+			<a href="https://thehanoichamomile.com">
+				<img alt='' src='https://thehanoichamomile.files.wordpress.com/2020/04/cropped-kira.jpg?w=50' class='avatar avatar-50' height='50' width='50' />				KIRA			</a>
+		</li>
+										<form method="post" action="https://subscribe.wordpress.com" accept-charset="utf-8" style="display: none;">
+																						<div class="actnbr-follow-count">Join 3,912 other followers</div>
+																					<div>
+										<input type="email" name="email" placeholder="Enter your email address" class="actnbr-email-field" aria-label="Enter your email address" />
+										</div>
+										<input type="hidden" name="action" value="subscribe" />
+										<input type="hidden" name="blog_id" value="148320211" />
+										<input type="hidden" name="source" value="https://thehanoichamomile.com/" />
+										<input type="hidden" name="sub-type" value="actionbar-follow" />
+										<input type="hidden" id="_wpnonce" name="_wpnonce" value="fd96fd6c22" />										<div class="actnbr-button-wrap">
+											<button type="submit" value="Sign me up">
+												Sign me up											</button>
+										</div>
+									</form>
+									<li class="actnbr-login-nudge">
+										<div>
+											Already have a WordPress.com account? <a href="https://wordpress.com/log-in?redirect_to=https%3A%2F%2Fr-login.wordpress.com%2Fremote-login.php%3Faction%3Dlink%26back%3Dhttps%253A%252F%252Fthehanoichamomile.com%252F2022%252F03%252F03%252F3-loai-tra-yeu-thich-cua-minh%252F">Log in now.</a>										</div>
+									</li>
+								</ul>
+															</div>
+						</div>
+					</li>
+							<li class="actnbr-ellipsis actnbr-hidden">
+				<svg class="gridicon gridicons-ellipsis" height="24" width="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g><path d="M7 12c0 1.104-.896 2-2 2s-2-.896-2-2 .896-2 2-2 2 .896 2 2zm12-2c-1.104 0-2 .896-2 2s.896 2 2 2 2-.896 2-2-.896-2-2-2zm-7 0c-1.104 0-2 .896-2 2s.896 2 2 2 2-.896 2-2-.896-2-2-2z"/></g></svg>				<div class="actnbr-popover tip tip-top-left actnbr-more">
+					<div class="tip-arrow"></div>
+					<div class="tip-inner">
+						<ul>
+									<li class="actnbr-sitename">
+			<a href="https://thehanoichamomile.com">
+				<img alt='' src='https://thehanoichamomile.files.wordpress.com/2020/04/cropped-kira.jpg?w=50' class='avatar avatar-50' height='50' width='50' />				KIRA			</a>
+		</li>
+								<li class="actnbr-folded-customize">
+								<a href="https://thehanoichamomile.wordpress.com/wp-admin/customize.php?url=https%3A%2F%2Fthehanoichamomile.wordpress.com%2F">
+									<svg class="gridicon gridicons-customize" height="20" width="20" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g><path d="M2 6c0-1.505.78-3.08 2-4 0 .845.69 2 2 2 1.657 0 3 1.343 3 3 0 .386-.08.752-.212 1.09.74.594 1.476 1.19 2.19 1.81L8.9 11.98c-.62-.716-1.214-1.454-1.807-2.192C6.753 9.92 6.387 10 6 10c-2.21 0-4-1.79-4-4zm12.152 6.848l1.34-1.34c.607.304 1.283.492 2.008.492 2.485 0 4.5-2.015 4.5-4.5 0-.725-.188-1.4-.493-2.007L18 9l-2-2 3.507-3.507C18.9 3.188 18.225 3 17.5 3 15.015 3 13 5.015 13 7.5c0 .725.188 1.4.493 2.007L3 20l2 2 6.848-6.848c1.885 1.928 3.874 3.753 5.977 5.45l1.425 1.148 1.5-1.5-1.15-1.425c-1.695-2.103-3.52-4.092-5.448-5.977z"/></g></svg>									<span>Customize</span>
+								</a>
+							</li>
+																<li class="actnbr-folded-follow">
+												<a class="actnbr-action actnbr-actn-follow " href="">
+			<svg class="gridicon gridicons-reader-follow" height="24" width="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g><path d="M23 16v2h-3v3h-2v-3h-3v-2h3v-3h2v3h3zM20 2v9h-4v3h-3v4H4c-1.1 0-2-.9-2-2V2h18zM8 13v-1H4v1h4zm3-3H4v1h7v-1zm0-2H4v1h7V8zm7-4H4v2h14V4z"/></g></svg><span>Follow</span>
+		</a>
+		<a class="actnbr-action actnbr-actn-following  no-display" href="">
+			<svg class="gridicon gridicons-reader-following" height="24" width="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g><path d="M23 13.482L15.508 21 12 17.4l1.412-1.388 2.106 2.188 6.094-6.094L23 13.482zm-7.455 1.862L20 10.89V2H2v14c0 1.1.9 2 2 2h4.538l4.913-4.832 2.095 2.176zM8 13H4v-1h4v1zm3-2H4v-1h7v1zm0-2H4V8h7v1zm7-3H4V4h14v2z"/></g></svg><span>Following</span>
+		</a>
+										</li>
+																	<li class="actnbr-signup"><a href="https://wordpress.com/start/">Sign up</a></li>
+									<li class="actnbr-login"><a href="https://wordpress.com/log-in?redirect_to=https%3A%2F%2Fr-login.wordpress.com%2Fremote-login.php%3Faction%3Dlink%26back%3Dhttps%253A%252F%252Fthehanoichamomile.com%252F2022%252F03%252F03%252F3-loai-tra-yeu-thich-cua-minh%252F">Log in</a></li>
+																	<li class="flb-report"><a href="http://en.wordpress.com/abuse/">Report this content</a></li>
+																	<li class="actnbr-reader">
+										<a href="https://wordpress.com/read/feeds/89312492">
+											View site in Reader										</a>
+									</li>
+																	<li class="actnbr-subs">
+										<a href="https://subscribe.wordpress.com/">Manage subscriptions</a>
+									</li>
+																		<li class="actnbr-fold"><a href="">Collapse this bar</a></li>
+															</ul>
+					</div>
+				</div>
+			</li>
+		</ul>
+	</div>
+	
+<script>
+window.addEventListener( "load", function( event ) {
+	var link = document.createElement( "link" );
+	link.href = "https://s0.wp.com/wp-content/mu-plugins/actionbar/actionbar.css?v=20210915";
+	link.type = "text/css";
+	link.rel = "stylesheet";
+	document.head.appendChild( link );
+
+	var script = document.createElement( "script" );
+	script.src = "https://s0.wp.com/wp-content/mu-plugins/actionbar/actionbar.js?v=20211028";
+	script.defer = true;
+	document.body.appendChild( script );
+} );
+</script>
+
+			<div id="jp-carousel-loading-overlay">
+			<div id="jp-carousel-loading-wrapper">
+				<span id="jp-carousel-library-loading">&nbsp;</span>
+			</div>
+		</div>
+		<div class="jp-carousel-overlay" style="display: none;">
+
+		<div class="jp-carousel-container">
+			<!-- The Carousel Swiper -->
+			<div
+				class="jp-carousel-wrap swiper-container jp-carousel-swiper-container jp-carousel-transitions"
+				itemscope
+				itemtype="https://schema.org/ImageGallery">
+				<div class="jp-carousel swiper-wrapper"></div>
+				<div class="jp-swiper-button-prev swiper-button-prev">
+					<svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<mask id="maskPrev" mask-type="alpha" maskUnits="userSpaceOnUse" x="8" y="6" width="9" height="12">
+							<path d="M16.2072 16.59L11.6496 12L16.2072 7.41L14.8041 6L8.8335 12L14.8041 18L16.2072 16.59Z" fill="white"/>
+						</mask>
+						<g mask="url(#maskPrev)">
+							<rect x="0.579102" width="23.8823" height="24" fill="#FFFFFF"/>
+						</g>
+					</svg>
+				</div>
+				<div class="jp-swiper-button-next swiper-button-next">
+					<svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<mask id="maskNext" mask-type="alpha" maskUnits="userSpaceOnUse" x="8" y="6" width="8" height="12">
+							<path d="M8.59814 16.59L13.1557 12L8.59814 7.41L10.0012 6L15.9718 12L10.0012 18L8.59814 16.59Z" fill="white"/>
+						</mask>
+						<g mask="url(#maskNext)">
+							<rect x="0.34375" width="23.8822" height="24" fill="#FFFFFF"/>
+						</g>
+					</svg>
+				</div>
+			</div>
+			<!-- The main close buton -->
+			<div class="jp-carousel-close-hint">
+				<svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+					<mask id="maskClose" mask-type="alpha" maskUnits="userSpaceOnUse" x="5" y="5" width="15" height="14">
+						<path d="M19.3166 6.41L17.9135 5L12.3509 10.59L6.78834 5L5.38525 6.41L10.9478 12L5.38525 17.59L6.78834 19L12.3509 13.41L17.9135 19L19.3166 17.59L13.754 12L19.3166 6.41Z" fill="white"/>
+					</mask>
+					<g mask="url(#maskClose)">
+						<rect x="0.409668" width="23.8823" height="24" fill="#FFFFFF"/>
+					</g>
+				</svg>
+			</div>
+			<!-- Image info, comments and meta -->
+			<div class="jp-carousel-info">
+				<div class="jp-carousel-info-footer">
+					<div class="jp-carousel-pagination-container">
+						<div class="jp-swiper-pagination swiper-pagination"></div>
+						<div class="jp-carousel-pagination"></div>
+					</div>
+					<div class="jp-carousel-photo-title-container">
+						<h2 class="jp-carousel-photo-caption"></h2>
+					</div>
+					<div class="jp-carousel-photo-icons-container">
+						<a href="#" class="jp-carousel-icon-btn jp-carousel-icon-info" aria-label="Toggle photo metadata visibility">
+							<span class="jp-carousel-icon">
+								<svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+									<mask id="maskInfo" mask-type="alpha" maskUnits="userSpaceOnUse" x="2" y="2" width="21" height="20">
+										<path fill-rule="evenodd" clip-rule="evenodd" d="M12.7537 2C7.26076 2 2.80273 6.48 2.80273 12C2.80273 17.52 7.26076 22 12.7537 22C18.2466 22 22.7046 17.52 22.7046 12C22.7046 6.48 18.2466 2 12.7537 2ZM11.7586 7V9H13.7488V7H11.7586ZM11.7586 11V17H13.7488V11H11.7586ZM4.79292 12C4.79292 16.41 8.36531 20 12.7537 20C17.142 20 20.7144 16.41 20.7144 12C20.7144 7.59 17.142 4 12.7537 4C8.36531 4 4.79292 7.59 4.79292 12Z" fill="white"/>
+									</mask>
+									<g mask="url(#maskInfo)">
+										<rect x="0.8125" width="23.8823" height="24" fill="#FFFFFF"/>
+									</g>
+								</svg>
+							</span>
+						</a>
+												<a href="#" class="jp-carousel-icon-btn jp-carousel-icon-comments" aria-label="Toggle photo comments visibility">
+							<span class="jp-carousel-icon">
+								<svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+									<mask id="maskComments" mask-type="alpha" maskUnits="userSpaceOnUse" x="2" y="2" width="21" height="20">
+										<path fill-rule="evenodd" clip-rule="evenodd" d="M4.3271 2H20.2486C21.3432 2 22.2388 2.9 22.2388 4V16C22.2388 17.1 21.3432 18 20.2486 18H6.31729L2.33691 22V4C2.33691 2.9 3.2325 2 4.3271 2ZM6.31729 16H20.2486V4H4.3271V18L6.31729 16Z" fill="white"/>
+									</mask>
+									<g mask="url(#maskComments)">
+										<rect x="0.34668" width="23.8823" height="24" fill="#FFFFFF"/>
+									</g>
+								</svg>
+
+								<span class="jp-carousel-has-comments-indicator" aria-label="This image has comments."></span>
+							</span>
+						</a>
+											</div>
+				</div>
+				<div class="jp-carousel-info-extra">
+					<div class="jp-carousel-info-content-wrapper">
+						<div class="jp-carousel-photo-title-container">
+							<h2 class="jp-carousel-photo-title"></h2>
+						</div>
+						<div class="jp-carousel-comments-wrapper">
+															<div id="jp-carousel-comments-loading">
+									<span>Loading Comments...</span>
+								</div>
+								<div class="jp-carousel-comments"></div>
+								<div id="jp-carousel-comment-form-container">
+									<span id="jp-carousel-comment-form-spinner">&nbsp;</span>
+									<div id="jp-carousel-comment-post-results"></div>
+																														<form id="jp-carousel-comment-form">
+												<label for="jp-carousel-comment-form-comment-field" class="screen-reader-text">Write a Comment...</label>
+												<textarea
+													name="comment"
+													class="jp-carousel-comment-form-field jp-carousel-comment-form-textarea"
+													id="jp-carousel-comment-form-comment-field"
+													placeholder="Write a Comment..."
+												></textarea>
+												<div id="jp-carousel-comment-form-submit-and-info-wrapper">
+													<div id="jp-carousel-comment-form-commenting-as">
+																													<fieldset>
+																<label for="jp-carousel-comment-form-email-field">Email (Required)</label>
+																<input type="text" name="email" class="jp-carousel-comment-form-field jp-carousel-comment-form-text-field" id="jp-carousel-comment-form-email-field" />
+															</fieldset>
+															<fieldset>
+																<label for="jp-carousel-comment-form-author-field">Name (Required)</label>
+																<input type="text" name="author" class="jp-carousel-comment-form-field jp-carousel-comment-form-text-field" id="jp-carousel-comment-form-author-field" />
+															</fieldset>
+															<fieldset>
+																<label for="jp-carousel-comment-form-url-field">Website</label>
+																<input type="text" name="url" class="jp-carousel-comment-form-field jp-carousel-comment-form-text-field" id="jp-carousel-comment-form-url-field" />
+															</fieldset>
+																											</div>
+													<input
+														type="submit"
+														name="submit"
+														class="jp-carousel-comment-form-button"
+														id="jp-carousel-comment-form-button-submit"
+														value="Post Comment" />
+												</div>
+											</form>
+																											</div>
+													</div>
+						<div class="jp-carousel-image-meta">
+							<div class="jp-carousel-title-and-caption">
+								<div class="jp-carousel-photo-info">
+									<h3 class="jp-carousel-caption" itemprop="caption description"></h3>
+								</div>
+
+								<div class="jp-carousel-photo-description"></div>
+							</div>
+							<ul class="jp-carousel-image-exif" style="display: none;"></ul>
+							<a class="jp-carousel-image-download" target="_blank" style="display: none;">
+								<svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+									<mask id="mask0" mask-type="alpha" maskUnits="userSpaceOnUse" x="3" y="3" width="19" height="18">
+										<path fill-rule="evenodd" clip-rule="evenodd" d="M5.84615 5V19H19.7775V12H21.7677V19C21.7677 20.1 20.8721 21 19.7775 21H5.84615C4.74159 21 3.85596 20.1 3.85596 19V5C3.85596 3.9 4.74159 3 5.84615 3H12.8118V5H5.84615ZM14.802 5V3H21.7677V10H19.7775V6.41L9.99569 16.24L8.59261 14.83L18.3744 5H14.802Z" fill="white"/>
+									</mask>
+									<g mask="url(#mask0)">
+										<rect x="0.870605" width="23.8823" height="24" fill="#FFFFFF"/>
+									</g>
+								</svg>
+								<span class="jp-carousel-download-text"></span>
+							</a>
+							<div class="jp-carousel-image-map" style="display: none;"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		</div>
+		<link rel='stylesheet' id='all-css-0-3' href='https://s0.wp.com/_static/??-eJyFy00OQDAQQOELGUP8xUKcpWoiZVTTadO4vVhY2LB8L/kwOdCHDWQD7hEcx8VYQa38EYUYJRlHHqZoZ6Zci2T4I1YKTukNnvGFgmGaYVHM5M933Wzch7Ktir5p+rpbL+lvP34=?cssminify=yes' type='text/css' media='all' />
+<script id='coblocks-lightbox-js-extra'>
+var coblocksLigthboxData = {"closeLabel":"Close Gallery","leftLabel":"Previous","rightLabel":"Next"};
+</script>
+<script id='jetpack-facebook-embed-js-extra'>
+var jpfbembed = {"appid":"249643311490","locale":"en_US"};
+</script>
+<script id='jetpack-carousel-js-extra'>
+var jetpackSwiperLibraryPath = {"url":"\/wp-content\/mu-plugins\/carousel\/swiper-bundle.js"};
+var jetpackCarouselStrings = {"widths":[370,700,1000,1200,1400,2000],"is_logged_in":"","lang":"en","ajaxurl":"https:\/\/thehanoichamomile.com\/wp-admin\/admin-ajax.php","nonce":"a0dba4b149","display_exif":"1","display_comments":"1","display_geo":"1","single_image_gallery":"1","single_image_gallery_media_file":"","background_color":"black","comment":"Comment","post_comment":"Post Comment","write_comment":"Write a Comment...","loading_comments":"Loading Comments...","download_original":"View full size <span class=\"photo-size\">{0}<span class=\"photo-size-times\">\u00d7<\/span>{1}<\/span>","no_comment_text":"Please be sure to submit some text with your comment.","no_comment_email":"Please provide an email address to comment.","no_comment_author":"Please provide your name to comment.","comment_post_error":"Sorry, but there was an error posting your comment. Please try again later.","comment_approved":"Your comment was approved.","comment_unapproved":"Your comment is in moderation.","camera":"Camera","aperture":"Aperture","shutter_speed":"Shutter Speed","focal_length":"Focal Length","copyright":"Copyright","comment_registration":"0","require_name_email":"1","login_url":"https:\/\/thehanoichamomile.wordpress.com\/wp-login.php?redirect_to=https%3A%2F%2Fthehanoichamomile.com%2F2021%2F12%2F18%2Fcup-of-tea%2F","blog_id":"148320211","meta_data":["camera","aperture","shutter_speed","focal_length","copyright"],"stats_query_args":"blog=148320211&v=wpcom&tz=7&user_id=0&subd=thehanoichamomile","is_public":"1"};
+</script>
+<script crossorigin='anonymous' type='text/javascript' src='https://s0.wp.com/_static/??-eJyNjttOw0AMRH8IxwTawgviU6q9OKmTvWntbenfNyAFQZEi3mbsGR/jpYDLSSkpToKezuyofHSTPOCPVWxQQhs5CXIaOLFev8V9dg26bEN2s+BT1792PQjHEggqnbsePcsXcA1B4PGkNv8h64kiCZZKkVvEmsUEps/q0JJTzkk2np1Ii3EzHjk5HIwjm/MMFC35jZbxkRNYUzEaUaqLAq3LnS2UMzU3obAyYR1sdJQDeRhNCFSvv90/SHApLsc7u/Te41t/2O0P+5f+8Xm6ARbjs4g='></script>
+<script type="text/javascript">
+// <![CDATA[
+(function() {
+try{
+  if ( window.external &&'msIsSiteMode' in window.external) {
+    if (window.external.msIsSiteMode()) {
+      var jl = document.createElement('script');
+      jl.type='text/javascript';
+      jl.async=true;
+      jl.src='/wp-content/plugins/ie-sitemode/custom-jumplist.php';
+      var s = document.getElementsByTagName('script')[0];
+      s.parentNode.insertBefore(jl, s);
+    }
+  }
+}catch(e){}
+})();
+// ]]>
+</script><script type="text/javascript">
+			(function() {
+				var extend = function(out) {
+					out = out || {};
+
+					for (var i = 1; i < arguments.length; i++) {
+						if (!arguments[i])
+						continue;
+
+						for (var key in arguments[i]) {
+						if (arguments[i].hasOwnProperty(key))
+							out[key] = arguments[i][key];
+						}
+					}
+
+					return out;
+				};
+				extend( window.infiniteScroll.settings.scripts, ["mobile-useragent-info","rlt-proxy","jquery-core","jquery-migrate","jquery","wpcom-actionbar-placeholder","grofiles-cards","wpgroho","textarea-autosize","highlander-comments","devicepx","the-neverending-homepage","coblocks-lightbox","rosalie-script","jetpack-facebook-embed","wpcom-masterbar-tracks-js","jetpack-carousel","tiled-gallery","carousel-wpcom"] );
+				extend( window.infiniteScroll.settings.styles, ["wpcom-smileys","the-neverending-homepage","wp-block-library","wp-block-library-theme","mediaelement","wp-mediaelement","jetpack-layout-grid","jetpack-ratings","coblocks-frontend","wpcom-core-compat-playlist-styles","wpcom-text-widget-styles","wpcom-bbpress2-staff-css","rosalie-style","rosalie-blocks-style","genericons","jetpack-social-menu","jetpack_facebook_likebox","wpcom_instagram_widget","geo-location-flair","reblogging","a8c-global-print","h4-global","global-styles","rosalie-webfont","jetpack-global-styles-frontend-style","highlander-comments","jetpack-carousel-swiper-css","jetpack-carousel","tiled-gallery"] );
+			})();
+		</script>
+				<span id="infinite-aria" aria-live="assertive"></span>
+		<script src="//stats.wp.com/w.js?63" defer></script> <script type="text/javascript">
+_tkq = window._tkq || [];
+_stq = window._stq || [];
+_tkq.push(['storeContext', {'blog_id':'148320211','blog_tz':'7','user_lang':'en','blog_lang':'en','user_id':'0'}]);
+_stq.push(['view', {'blog':'148320211','v':'wpcom','tz':'7','user_id':'0','subd':'thehanoichamomile'}]);
+_stq.push(['extra', {'crypt':'UE40eW5QN0p8M2Y/RE1TaVhzUzFMbjdWNHpwZGhTayxPSUFCMGNrd29+Smw0TDhnZmRTK0hlRi9QSGh6bi9GXVhBJWIlZlR5U1JMLU8/MkNtblkvY1dMeDhFKyVaPzFCUj9bd3hNMlFQWzFGOVJ+bDZ+akRsWTBPMWU4K35pWWhHeix3QURvR0FkLjVxfFgxUy09bFM0YUx8WlhxV1Yzck90TkY9QXQzRmpGV0JFSndyVHYuR1NyekJ8RWJ1NERwdU9mfGxSR3VdU3JdJUU2dTMxTGQyM1RfcDdfaEhyRHRdNGxrU1JHQ3dGaWlETlJ5cVlrdi1kW1pVMDlOR05OMWolTU9Wci55cTFQfEZnRE5DR3BFdHJLTiVMakNvaEQvd25jTDZVYkt3XXJjY1AtLGxGP0xJMnRQb2Fa'}]);
+_stq.push([ 'clickTrackerInit', '148320211', '0' ]);
+	</script>
+<noscript><img src="https://pixel.wp.com/b.gif?v=noscript" style="height:1px;width:1px;overflow:hidden;position:absolute;bottom:1px;" alt="" /></noscript>
+<script>
+if ( 'object' === typeof wpcom_mobile_user_agent_info ) {
+
+	wpcom_mobile_user_agent_info.init();
+	var mobileStatsQueryString = "";
+	
+	if( false !== wpcom_mobile_user_agent_info.matchedPlatformName )
+		mobileStatsQueryString += "&x_" + 'mobile_platforms' + '=' + wpcom_mobile_user_agent_info.matchedPlatformName;
+	
+	if( false !== wpcom_mobile_user_agent_info.matchedUserAgentName )
+		mobileStatsQueryString += "&x_" + 'mobile_devices' + '=' + wpcom_mobile_user_agent_info.matchedUserAgentName;
+	
+	if( wpcom_mobile_user_agent_info.isIPad() )
+		mobileStatsQueryString += "&x_" + 'ipad_views' + '=' + 'views';
+
+	if( "" != mobileStatsQueryString ) {
+		new Image().src = document.location.protocol + '//pixel.wp.com/g.gif?v=wpcom-no-pv' + mobileStatsQueryString + '&baba=' + Math.random();
+	}
+	
+}
+</script></body>
+</html>
+<!--
+	generated in 0.221 seconds
+	117566 bytes batcached for 300 seconds
+-->
